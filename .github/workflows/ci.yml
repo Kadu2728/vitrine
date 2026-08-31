@@ -43,8 +43,20 @@ jobs:
         run: uv run pytest --durations=10
 
       - name: Cobertura do dominio
-        # O dominio e a unica coisa que existe na Fase 1; 90% e o piso.
-        run: uv run pytest --cov=vitrine.domain --cov-report=term-missing --cov-fail-under=90
+        # O dominio carrega toda a matematica; o piso aqui e alto de proposito.
+        run: uv run pytest --cov=vitrine.domain --cov-report=term-missing --cov-fail-under=95
+
+      - name: Cobertura do pacote
+        # vision/yolo.py fica de fora por so ser exercitado com o extra [yolo],
+        # que a CI nao instala para nao baixar torch a cada execucao.
+        run: >-
+          uv run pytest --cov=vitrine --cov-report=term-missing
+          --cov-fail-under=95 --cov-config=.coveragerc-ci
+
+      - name: A demonstracao do README continua funcionando
+        # Se examples/demo.py quebrar, a imagem no topo do README passa a
+        # mentir. Barato o bastante para rodar sempre.
+        run: uv run python examples/demo.py
 
   invariantes:
     name: invariantes (500 exemplos por propriedade)

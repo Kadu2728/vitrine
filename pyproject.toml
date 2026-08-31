@@ -14,10 +14,23 @@ classifiers = [
     "Typing :: Typed",
 ]
 
-# Fase 1 e dominio puro: nenhuma dependencia de imagem, modelo ou IO.
+# O modelo NAO esta aqui de proposito: ultralytics arrasta torch e alguns
+# gigabytes. Ele e um extra opcional (vitrine-shelf[yolo]) porque a regra R2
+# so vale se o nucleo realmente funcionar sem ele.
 dependencies = [
     "pydantic>=2.9",
+    "numpy>=2.0",
+    "opencv-python-headless>=4.10",
+    "pillow>=10.4",
+    "typer>=0.12",
+    "rich>=13.7",
 ]
+
+[project.optional-dependencies]
+yolo = ["ultralytics>=8.3"]
+
+[project.scripts]
+vitrine = "vitrine.cli:app"
 
 [project.urls]
 Homepage = "https://github.com/vitrine/vitrine-shelf"
@@ -74,6 +87,12 @@ warn_no_return = true
 disallow_any_explicit = false
 show_error_codes = true
 
+[[tool.mypy.overrides]]
+# Extra opcional e sem stubs publicados. O isolamento em vision/yolo.py e
+# justamente o que impede essa concessao de vazar para o resto do codigo.
+module = ["ultralytics.*"]
+ignore_missing_imports = true
+
 [tool.pydantic-mypy]
 init_forbid_extra = true
 init_typed = true
@@ -109,6 +128,7 @@ ignore = [
     "D203",   # conflita com D211
     "D213",   # conflita com D212
     "ANN401", # Any explicito e permitido onde documentado
+    "D107",   # convencao Google: os argumentos do construtor vao no docstring da classe
 ]
 
 [tool.ruff.lint.per-file-ignores]

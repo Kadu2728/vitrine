@@ -27,3 +27,6 @@ saidas/
 # Sistema
 .DS_Store
 Thumbs.db
+
+# Log de erro da CLI
+vitrine.log

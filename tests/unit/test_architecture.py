@@ -80,14 +80,31 @@ def test_dominio_nao_faz_io() -> None:
                 assert no.func.id != "open", f"{modulo.name} chama open()"
 
 
-def test_fase_1_nao_tem_dependencia_de_fase_futura() -> None:
-    """A Fase 1 declara apenas Pydantic.
+def test_o_modelo_e_extra_opcional_e_nao_dependencia_base() -> None:
+    """Ultralytics e torch nao podem entrar nas dependencias base.
 
-    Instalar YOLO agora seria antecipar complexidade sem ter provado a
-    matematica primeiro.
+    A regra R2 -- o modelo e injetado, nunca importado direto na logica -- so
+    vale se o pacote realmente instalar e funcionar sem ele. Se o peso virar
+    dependencia obrigatoria, a injecao vira decoracao e ``pipx install`` passa
+    a baixar gigabytes.
     """
     raiz = Path(vitrine.__file__).parents[2]
     pyproject = (raiz / "pyproject.toml").read_text(encoding="utf-8")
-    bloco = pyproject.split("dependencies = [")[1].split("]")[0]
-    for proibida in ("ultralytics", "opencv", "torch", "typer", "rich", "sqlalchemy"):
-        assert proibida not in bloco, f"{proibida} nao pertence as dependencias da Fase 1"
+    base = pyproject.split("dependencies = [")[1].split("]")[0]
+    for proibida in ("ultralytics", "torch", "sqlalchemy", "fastapi"):
+        assert proibida not in base, f"{proibida} nao pertence as dependencias base"
+    assert 'yolo = ["ultralytics' in pyproject, "ultralytics precisa existir como extra"
+
+
+def test_nada_fora_de_yolo_importa_ultralytics() -> None:
+    """Apenas ``vision/yolo.py`` pode conhecer o Ultralytics.
+
+    E o modulo que a R2 isola atras do protocolo. Um import em qualquer outro
+    lugar significa que a logica passou a depender do framework.
+    """
+    pacote = Path(vitrine.__file__).parent
+    for modulo in sorted(pacote.rglob("*.py")):
+        if modulo.name == "yolo.py":
+            continue
+        fonte = modulo.read_text(encoding="utf-8")
+        assert "ultralytics" not in fonte, f"{modulo.name} menciona ultralytics"

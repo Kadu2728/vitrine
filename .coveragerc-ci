@@ -1,0 +1,17 @@
+# Cobertura do pacote na CI.
+#
+# vision/yolo.py e omitido porque a CI nao instala o extra [yolo]: medir um
+# modulo que nao foi carregado nao diz nada sobre ele, e deixa-lo na conta so
+# rebaixa o numero sem informacao nenhuma. Ele e coberto por
+# `uv run pytest -m slow`, com o extra instalado.
+[run]
+branch = True
+source = vitrine
+omit = */vitrine/vision/yolo.py
+
+[report]
+show_missing = True
+exclude_lines =
+    pragma: no cover
+    if TYPE_CHECKING:
+    raise NotImplementedError

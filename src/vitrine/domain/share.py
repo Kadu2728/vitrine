@@ -33,6 +33,8 @@ from vitrine.domain.gaps import DEFAULT_GAP_MIN_WIDTH_RATIO, find_gaps
 from vitrine.domain.models import (
     AnalysisParams,
     Detection,
+    DetectorInfo,
+    ImageMeta,
     RegionSet,
     RegionShare,
     ShareReport,
@@ -63,6 +65,8 @@ def analyze_detections(
     gap_min_width_ratio: float = DEFAULT_GAP_MIN_WIDTH_RATIO,
     dedup_iou: float = DEFAULT_DEDUP_IOU,
     source: str | None = None,
+    image: ImageMeta | None = None,
+    detector: DetectorInfo | None = None,
 ) -> ShareReport:
     """Transforma deteccoes soltas num relatorio completo de gondola.
 
@@ -81,6 +85,8 @@ def analyze_detections(
         gap_min_width_ratio: ver ``domain.gaps``.
         dedup_iou: ver ``domain.dedup``.
         source: identificador livre da origem, ecoado na saida.
+        image: procedencia da imagem, preenchida pela camada de visao.
+        detector: procedencia das deteccoes, preenchida pela camada de visao.
 
     Returns:
         O relatorio. Com entrada vazia, ``status`` vale ``no_detections`` e
@@ -110,6 +116,8 @@ def analyze_detections(
         return ShareReport(
             status="no_detections",
             source=source,
+            image=image,
+            detector=detector,
             total_detections=0,
             duplicates_removed=duplicates_removed,
             shelf_count=0,
@@ -131,6 +139,8 @@ def analyze_detections(
     return ShareReport(
         status="ok",
         source=source,
+        image=image,
+        detector=detector,
         total_detections=len(kept),
         duplicates_removed=duplicates_removed,
         shelf_count=len(reports),
@@ -186,6 +196,7 @@ def _analyze_shelf(
         occupied_length=total_occupied,
         occupancy=_ratio(total_occupied, shelf_extent.width),
         spread_ratio=shelf.spread_ratio,
+        boxes=tuple(d.box for d in shelf.detections),
         regions=tuple(region_shares),
         gaps=find_gaps(shelf, shelf_extent, min_width_ratio=gap_min_width_ratio),
     )

@@ -21,8 +21,13 @@ from vitrine.domain import geometry
 if TYPE_CHECKING:
     from vitrine.domain.geometry import Interval
 
-SCHEMA_VERSION: Final[Literal["1.0"]] = "1.0"
-"""Versao do schema JSON de saida. Muda quando o contrato quebra."""
+SCHEMA_VERSION: Final[Literal["1.1"]] = "1.1"
+"""Versao do schema JSON de saida. Muda quando o contrato muda.
+
+1.1 acrescentou ``image``, ``detector`` e ``ShelfReport.boxes``: sem saber de
+que foto e de que peso o numero saiu, o relatorio nao e auditavel -- e sem as
+caixas, quem consome o JSON nao consegue desenhar nem conferir nada.
+"""
 
 _FROZEN = ConfigDict(frozen=True, extra="forbid")
 
@@ -396,6 +401,42 @@ class Gap(BaseModel):
         return self.x_end - self.x_start
 
 
+class ImageMeta(BaseModel):
+    """De que imagem o relatorio saiu, e o que foi feito com ela antes.
+
+    Sao dados puros -- numeros e strings -- e por isso moram no dominio sem
+    quebrar a regra de dependencia: o dominio nao abre imagem, apenas registra
+    o que a camada de visao informou.
+    """
+
+    model_config = _FROZEN
+
+    name: str = Field(min_length=1, description="Nome do arquivo, sem o caminho completo.")
+    width: int = Field(gt=0, description="Largura em pixels da imagem analisada.")
+    height: int = Field(gt=0, description="Altura em pixels da imagem analisada.")
+    exif_rotated: bool = Field(description="Se a orientacao EXIF precisou ser aplicada.")
+    downscale: float = Field(gt=0.0, le=1.0, description="Fator de reducao aplicado.")
+    rectified: bool = Field(description="Se houve correcao de perspectiva por 4 pontos.")
+
+
+class DetectorInfo(BaseModel):
+    """Quem produziu as deteccoes, e com quais limiares.
+
+    Dois relatorios com numeros diferentes podem vir da mesma foto apenas por
+    um peso ou um limiar distinto. Sem este registro, comparar duas visitas ao
+    mesmo PDV nao significa nada.
+    """
+
+    model_config = _FROZEN
+
+    name: str = Field(min_length=1)
+    version: str = Field(min_length=1)
+    weights: str | None = Field(default=None, description="Identificacao do peso usado.")
+    weights_sha256: str | None = Field(default=None, description="Hash do arquivo de peso.")
+    confidence_threshold: float = Field(ge=0.0, le=1.0)
+    iou_threshold: float = Field(ge=0.0, le=1.0)
+
+
 class ShelfReport(BaseModel):
     """Relatorio de uma prateleira."""
 
@@ -411,6 +452,10 @@ class ShelfReport(BaseModel):
     occupied_length: float = Field(ge=0.0)
     occupancy: float = Field(ge=0.0, le=1.0)
     spread_ratio: float = Field(ge=0.0)
+    boxes: tuple[BoundingBox, ...] = Field(
+        min_length=1,
+        description="Caixas dos produtos desta prateleira, da esquerda para a direita.",
+    )
     regions: tuple[RegionShare, ...] = Field(min_length=1)
     gaps: tuple[Gap, ...]
 
@@ -443,9 +488,11 @@ class ShareReport(BaseModel):
 
     model_config = _FROZEN
 
-    schema_version: Literal["1.0"] = SCHEMA_VERSION
+    schema_version: Literal["1.1"] = SCHEMA_VERSION
     status: Literal["ok", "no_detections"]
     source: str | None = None
+    image: ImageMeta | None = None
+    detector: DetectorInfo | None = None
     total_detections: int = Field(ge=0, description="Deteccoes apos deduplicacao.")
     duplicates_removed: int = Field(ge=0)
     shelf_count: int = Field(ge=0)
