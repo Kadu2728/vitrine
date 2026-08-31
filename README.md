@@ -2,12 +2,28 @@
 
 **Auditoria de execução em ponto de venda por visão computacional.**
 
-> **Status: Fase 1 de 4 — domínio puro.**
-> A matemática está pronta e testada. **Ainda não existe detector, imagem, CLI
-> nem persistência.** O que existe é uma biblioteca que transforma caixas
-> delimitadoras em um relatório de gôndola, e que pode ser verificada de ponta a
-> ponta sem carregar um único peso de modelo. A lista completa do que não
-> funciona está em [O que ainda não existe](#o-que-ainda-não-existe).
+![Gôndola analisada: caixas coloridas por prateleira, ruptura destacada em vermelho](examples/gondola.anotada.png)
+
+```
+                         Share por prateleira
+┌───────┬──────────┬──────────┬────────┬──────────────┬──────────────┐
+│       │          │          │        │  minha_marca │ concorrencia │
+│ Prat. │ Produtos │ Ocupacao │ Vazios │ cont. | area │ cont. | area │
+├───────┼──────────┼──────────┼────────┼──────────────┼──────────────┤
+│     0 │        9 │      87% │      0 │    44% | 50% │    56% | 50% │
+│     1 │        6 │      58% │      1 │    50% | 50% │    50% | 50% │
+│     2 │        9 │      87% │      0 │    44% | 50% │    56% | 50% │
+└───────┴──────────┴──────────┴────────┴──────────────┴──────────────┘
+24 produtos em 3 prateleira(s); 1 vazio(s).
+```
+
+> Saída real de `vitrine analyze`, sobre a imagem acima. Reproduza com
+> `uv run python examples/demo.py`.
+
+> **Status: Fase 2 de 4.** Funciona de ponta a ponta — foto entra, relatório e
+> imagem anotada saem. **O detector real ainda não tem peso treinado em
+> gôndola**, e as métricas de detecção continuam *não medidas*. Ver
+> [Resultados](#resultados) e [O que ainda não existe](#o-que-ainda-não-existe).
 
 ---
 
@@ -26,9 +42,8 @@ Quando vira número, vira o número que eu digitei na prancheta, que ninguém
 consegue auditar depois.
 
 Este projeto pega a foto e devolve o número. Quantos produtos estão expostos,
-como o espaço está dividido, onde tem buraco na prateleira, e como isso mudou
-desde a última visita. O problema não é hipotético e o sistema não é uma demo:
-é a ferramenta que eu queria ter.
+como o espaço está dividido, onde tem buraco na prateleira. O problema não é
+hipotético e o sistema não é uma demo: é a ferramenta que eu queria ter.
 
 ---
 
@@ -38,38 +53,50 @@ Porque a interface não é o difícil aqui, e fingir que é seria desonesto.
 
 Este projeto **não tem front-end, não tem API HTTP e não tem Docker Compose com
 cinco serviços**. É decisão de arquitetura, não limitação. A saída visual é a
-imagem anotada — ela *é* a UI. A integração com qualquer outro sistema se faz
-pelo `--json`, com schema versionado — ele *é* a API. Uma camada web em cima
-disso adicionaria superfície de manutenção sem adicionar capacidade.
+imagem anotada — ela *é* a UI, e é a primeira coisa neste README. A integração
+com qualquer outro sistema se faz pelo `--json`, com schema versionado — ele *é*
+a API:
 
-O efeito colateral é o ponto: sem tela bonita, não há onde esconder problema. A
-qualidade do código, dos testes e do contrato de saída é o produto inteiro.
+```bash
+vitrine analyze foto.jpg --json | jq '.regions[] | {(.region): .linear_share}'
+```
+
+Uma camada web em cima disso adicionaria superfície de manutenção sem adicionar
+capacidade. O efeito colateral é o ponto: sem tela bonita, não há onde esconder
+problema. A qualidade do código, dos testes e do contrato de saída é o produto
+inteiro.
 
 ---
 
 ## O que faz e o que não faz
 
-**Faz** (Fase 1, funcionando e testado):
+**Faz, funcionando e testado:**
 
-- Agrupa detecções soltas em prateleiras, com limiar relativo ao tamanho do
-  produto — funciona igual em foto de 800 px ou de 4000 px.
-- Calcula **share por contagem** e **share por área linear**, lado a lado.
-- Calcula **ocupação** por prateleira e por região.
-- Detecta **espaço vazio** com limiar relativo à largura mediana do produto
-  daquela prateleira.
-- Remove detecções duplicadas antes de contar.
-- Emite um relatório Pydantic serializável, com schema versionado e os
-  parâmetros da análise ecoados na saída.
+- Carrega a foto corrigindo **orientação EXIF** e reduzindo o tamanho, com o
+  fator registrado na saída.
+- Corrige **perspectiva** a partir de quatro cantos informados.
+- Detecta produtos por trás de um **protocolo**, com três implementações
+  (`fake`, `contour`, `yolo`) — trocáveis sem tocar em nenhuma regra de negócio.
+- Remove **detecções duplicadas** antes de contar.
+- Agrupa em **prateleiras**, com limiar relativo ao tamanho do produto.
+- Calcula **share por contagem**, **share por área linear** e **ocupação**, lado
+  a lado.
+- Detecta **espaço vazio** com limiar relativo à largura mediana da prateleira.
+- Desenha a **imagem anotada** e emite **JSON com schema versionado**.
+- Mede **precisão, recall e AP@50** de qualquer detector sobre um dataset
+  anotado.
 
 **Não faz, e não vai fazer:**
 
-- **Não identifica SKU nem marca.** Produto é classe única. Distinguir uma
-  marca da outra é um problema de classificação fina que exige dataset
-  rotulado por SKU, e está fora do escopo. Sem isso, "share of shelf" só faz
-  sentido entre *regiões espaciais* da gôndola, e é assim que ele é calculado.
+- **Não identifica SKU nem marca.** Produto é classe única. Sem isso, "share of
+  shelf" só faz sentido entre *regiões espaciais* da gôndola, e é assim que ele
+  é calculado.
 - **Não detecta prateleira vazia.** O sistema infere prateleiras a partir dos
   produtos. Onde não há produto, não há prateleira, e portanto não há alerta.
   Ruptura total de uma prateleira inteira é um ponto cego real deste método.
+- **Não detecta a gôndola automaticamente.** Os quatro pontos da perspectiva são
+  informados à mão. Detecção automática é um projeto inteiro sozinho e entra só
+  se for medido que ajuda.
 - **Não tem interface web.** Ver acima.
 
 ---
@@ -77,33 +104,46 @@ qualidade do código, dos testes e do contrato de saída é o produto inteiro.
 ## Como funciona
 
 ```
-detecções (caixas)
-      │
-      ├─ dedup ............. remove a mesma garrafa contada três vezes
-      │
-      ├─ shelves ........... agrupa em prateleiras (clusterização 1D)
-      │
-      ├─ share ............. contagem, área linear e ocupação por região
-      │
-      └─ gaps .............. espaços vazios que caberia produto
-      │
-      ▼
-  ShareReport (JSON com schema versionado)
+foto.jpg
+   │
+   ├─ image ............. carrega, corrige EXIF, reduz  ─┐
+   │                                                     │ vision
+   ├─ perspective ....... homografia por 4 pontos        │ (sabe o que é imagem)
+   │                                                     │
+   ├─ Detector (Protocol)  fake | contour | yolo        ─┘
+   │        │
+   │        └─ detecções (caixas)
+   │
+   ├─ dedup ............. remove a mesma garrafa contada três vezes  ─┐
+   ├─ shelves ........... agrupa em prateleiras (clusterização 1D)    │ domain
+   ├─ share ............. contagem, área linear e ocupação por região │ (só matemática)
+   └─ gaps .............. espaços onde caberia produto               ─┘
+            │
+            ├─ ShareReport ──► JSON (schema 1.1)
+            └─ annotate ────► imagem anotada
 ```
 
-A regra de dependência é rígida: `domain/` não importa nada de `vision/`,
-`storage/`, `batch/` ou `render/`, e não conhece imagem, arquivo nem modelo. Isso
-não é uma promessa do README — é
-[um teste](tests/unit/test_architecture.py) que quebra a suíte se alguém violar.
+**A regra de dependência é rígida:** `domain/` não importa nada de `vision/`,
+`render/` ou `eval/`, e não conhece imagem, arquivo nem modelo. Não é uma
+promessa do README — é [um teste](tests/unit/test_architecture.py) que analisa a
+AST de cada módulo e quebra a suíte se alguém violar.
 
-### As quatro decisões que importam
+### As decisões que importam
 
-**1. Agrupamento em prateleiras.** Prateleira é inferência, não dado.
+**1. O modelo é injetado, nunca importado pela lógica.** Existe um `Detector`
+Protocol; `YoloDetector` é uma implementação entre outras. Consequência prática:
+**toda a suíte rápida roda sem carregar um único peso** — 279 testes em cerca de
+5 segundos, incluindo o caminho completo de foto até imagem anotada. E o
+Ultralytics é um *extra opcional*, não uma dependência base: `pipx install
+vitrine-shelf` não baixa gigabytes de torch. Se o modelo estivesse em
+`dependencies`, a injeção seria decoração.
+
+**2. Agrupamento em prateleiras.** Prateleira é inferência, não dado.
 Clusterização aglomerativa 1D por *single linkage* sobre o centro vertical, com
-limiar `τ = 0.5 × mediana(altura dos produtos)`. Relativo, nunca absoluto em
-pixels: um limiar em pixels quebraria assim que a resolução mudasse.
+limiar `τ = 0.5 × mediana(altura dos produtos)` — relativo, nunca absoluto em
+pixels, porque um limiar em pixels quebra assim que a resolução muda.
 
-Descartei k-means (exige saber quantas prateleiras existem — que é justamente o
+Descartei k-means (exige saber quantas prateleiras existem, que é justamente o
 que não se sabe), DBSCAN (em 1D degenera para o mesmo algoritmo, com dois
 hiperparâmetros a mais e uma dependência externa) e histograma com detecção de
 picos (depende do tamanho do bin, e bin é uma constante em pixels).
@@ -113,146 +153,177 @@ deslizando de pouco em pouco — o que acontece em toda gôndola fotografada em
 ângulo — funde duas prateleiras num cluster só, silenciosamente. Por isso todo
 cluster com dispersão vertical acima de `1.5 × mediana(altura)` é reparticionado
 na sua maior lacuna interna. Onde o método quebra está documentado em
-[`shelves.py`](src/vitrine/domain/shelves.py).
+[`shelves.py`](src/vitrine/domain/shelves.py), e o relatório sinaliza via
+`spread_ratio` e um aviso.
 
-**2. Share of shelf tem duas definições, e elas discordam.** Share por contagem
-de produtos e share por área linear ocupada não dão o mesmo número — e chegam a
-inverter a ordem entre regiões. Duas embalagens grandes contra três pequenas: por
-contagem, as pequenas ganham; por área, as grandes. As duas leituras são
-legítimas e respondem a perguntas diferentes. Publicar só uma seria escolher a
-resposta mais conveniente, então o relatório traz as duas.
+**3. Share of shelf tem duas definições, e elas discordam.** Share por contagem
+e share por área linear não dão o mesmo número — e chegam a inverter a ordem
+entre regiões. Duas embalagens grandes contra três pequenas: por contagem, as
+pequenas ganham; por área, as grandes. As duas leituras são legítimas e
+respondem a perguntas diferentes. Publicar só uma seria escolher a resposta mais
+conveniente, então o relatório traz as duas — repare nas colunas `cont. | area`
+da tabela no topo.
 
-O share linear é calculado sobre a **união** das projeções horizontais, nunca
-pela soma das larguras: em gôndola cheia os produtos se sobrepõem na projeção 2D,
-e a soma ingênua produziria share acima de 100%.
+O share linear sai da **união** das projeções horizontais, nunca da soma das
+larguras: em gôndola cheia os produtos se sobrepõem na projeção 2D, e a soma
+ingênua daria share acima de 100%.
 
-**3. O denominador do share é uma decisão, não um dado.** `ocupado / total` exige
-dizer o que é `total`, e a prateleira física não é detectada. São duas escolhas
-defensáveis, com números diferentes:
+**4. O denominador do share é uma decisão, não um dado.** `ocupado / total`
+exige dizer o que é `total`, e a prateleira física não é detectada. Duas
+escolhas defensáveis, com números diferentes: `envelope` (do primeiro ao último
+produto — ignora vazio nas pontas) e `explicit` (`--extent`, informado por quem
+conhece a gôndola). O relatório **sempre** carrega qual foi usado.
 
-- `envelope` (padrão): da borda esquerda do primeiro produto à direita do
-  último. Ignora vazio nas pontas e tende a superestimar a ocupação.
-- `explicit`: limites informados por quem conhece a gôndola. Enxerga vazio nas
-  extremidades, ao custo de depender de um parâmetro humano.
+**5. Espaço vazio é relativo.** Vazio não é ausência de caixa — entre dois
+produtos sempre sobram pixels. Vazio é um intervalo onde caberia mais um produto
+*daquela prateleira*. O limiar é a largura mediana local: uma prateleira de latas
+e uma de caixas de sabão em pó têm noções diferentes de "grande".
 
-O relatório **sempre** carrega qual foi usado, para que o número seja auditável.
+**6. A perspectiva é aplicada à imagem, antes da detecção.** Transformar caixas
+por homografia produziria quadriláteros, e o domínio só entende retângulo
+alinhado ao eixo — além de o detector acertar mais em imagem retificada.
 
-**4. Espaço vazio é relativo, não absoluto.** Vazio não é ausência de caixa —
-entre dois produtos vizinhos sempre sobram alguns pixels. Vazio é um intervalo
-onde caberia mais um produto *daquela prateleira*. O limiar é a largura mediana
-local: uma prateleira de latas e uma de caixas de sabão em pó têm noções
-diferentes de "grande".
+**7. EXIF é corrigido sempre.** Foto de celular vem rotacionada por metadado.
+Orientação errada entrega a gôndola deitada, e o agrupamento por centro vertical
+produz lixo **sem levantar erro nenhum**. É a falha silenciosa mais cara do
+sistema e tem [teste próprio](tests/unit/test_vision.py).
 
 ---
 
 ## O contrato de saída
 
-Saída real, gerada pela gôndola de exemplo dos testes (recorte; o JSON completo
-tem mais campos):
+Recorte do JSON real gerado pela imagem no topo:
 
 ```json
 {
-  "schema_version": "1.0",
+  "schema_version": "1.1",
   "status": "ok",
-  "total_detections": 7,
-  "shelf_count": 2,
+  "total_detections": 24,
+  "shelf_count": 3,
+  "image":    { "name": "gondola.png", "width": 900, "height": 620,
+                "exif_rotated": false, "downscale": 1.0, "rectified": false },
+  "detector": { "name": "contour", "version": "opencv-5.0.0",
+                "weights": null, "weights_sha256": null },
   "regions": [
-    { "region": "esquerda", "count": 3, "count_share": 0.4285714285714286,
-      "occupied_length": 205.0, "linear_share": 0.5540540540540541,
-      "occupancy": 0.6612903225806451 },
-    { "region": "direita",  "count": 4, "count_share": 0.5714285714285714,
-      "occupied_length": 165.0, "linear_share": 0.4459459459459459,
-      "occupancy": 0.532258064516129 }
+    { "region": "minha_marca",  "count": 11, "count_share": 0.4583,
+      "occupied_length": 900.0, "linear_share": 0.5, "occupancy": 0.7702 },
+    { "region": "concorrencia", "count": 13, "count_share": 0.5417,
+      "occupied_length": 900.0, "linear_share": 0.5, "occupancy": 0.7702 }
   ]
 }
 ```
 
-Repare no que este exemplo mostra: **por contagem a direita ganha (4 contra 3),
-por área linear a esquerda ganha (0,554 contra 0,446)**. É exatamente o caso que
-justifica publicar as duas métricas em vez de escolher uma.
+Todo relatório carrega `image`, `detector` e `params` — a procedência completa.
+Comparar duas visitas ao mesmo PDV só significa alguma coisa se o peso, os
+limiares e o tratamento da imagem forem os mesmos, e esses campos existem para
+que isso seja verificável em vez de suposto.
 
 `occupancy` não é share e não soma 1,0 — é ocupado dividido pela largura da
-região. É a única das três métricas afirmável sem definir regiões, e por isso é o
-que o relatório traz por padrão.
+região. É a única das três métricas afirmável sem definir regiões, e por isso é
+o que o relatório traz por padrão.
 
 ---
 
 ## Resultados
 
-Métricas de detecção — precisão, recall, mAP@50 sobre o SKU-110K: **não
-medido.** Não existe detector neste repositório ainda. O número entra em
-[`benchmarks/results.md`](benchmarks/results.md) na Fase 2, com data e comando,
-seja ele bom ou ruim.
+**Precisão, recall e mAP@50 sobre o SKU-110K: não medido.**
 
-O que está medido hoje, de execução real em 2026-08-31:
+O motivo não é falta de código — a máquina de medição existe, está testada e
+roda. O que falta é o peso: **não existe checkpoint YOLO oficial pré-treinado em
+SKU-110K**. O Ultralytics distribui um `SKU-110K.yaml` (configuração de
+*dataset*, para treinar) e pesos de COCO, que não conhecem gôndola. As opções e
+o método já registrado estão em [`benchmarks/results.md`](benchmarks/results.md).
+
+O que **está** medido, de execução real em 2026-08-31:
 
 | Métrica | Valor |
 |---|---|
-| Testes da suíte rápida | 151 passando |
-| Tempo da suíte rápida | 3,9 s |
+| Testes da suíte rápida | 279 passando, 1 pulado |
+| Tempo da suíte rápida | ~5 s (ver ressalva) |
 | Cobertura de `vitrine.domain` | **100%** de linhas e de ramos |
-| Invariantes de propriedade | 18 propriedades × 500 exemplos, 58 s |
+| Cobertura do pacote inteiro | 92% de linhas |
+| Invariantes de propriedade | 18 propriedades × 500 exemplos |
+| Avaliador sobre conjunto sintético | precisão 1.0, recall 1.0, AP@0.5 1.0 |
 
-Comandos e ambiente em [`benchmarks/results.md`](benchmarks/results.md).
+A última linha **não é um resultado de detecção**: é a verificação de que o
+instrumento marca zero corretamente antes de medir qualquer coisa.
 
 ---
 
 ## Como rodar
 
-Ainda não há CLI — ela chega na Fase 2. O que existe é a biblioteca:
-
 ```bash
 uv sync
+uv run vitrine analyze foto.jpg --out ./resultado
 ```
+
+Com o detector real (baixa torch, alguns gigabytes):
+
+```bash
+uv pip install 'vitrine-shelf[yolo]'
+uv run vitrine analyze foto.jpg --detector yolo --out ./resultado
+```
+
+Exemplo completo — perspectiva corrigida e o espaço contratado da metade para a
+direita:
+
+```bash
+uv run vitrine analyze foto.jpg --out ./resultado --detector yolo --perspective 120,80 900,60 940,700 100,720 --cuts 0,0.5,1 --region-names minha_marca,concorrencia
+```
+
+Avaliar um detector sobre um dataset anotado no formato YOLO:
+
+```bash
+uv run vitrine benchmark ./dataset --split val --detector yolo --weights modelo.pt --json
+```
+
+Como biblioteca:
 
 ```python
-from vitrine import BoundingBox, Detection, RegionSet, analyze_detections
+from pathlib import Path
+from vitrine import ContourDetector, RegionSet, analyze_image, annotate
 
-detections = [
-    Detection(box=BoundingBox(x1=0, y1=0, x2=80, y2=100)),
-    Detection(box=BoundingBox(x1=90, y1=0, x2=170, y2=100)),
-    Detection(box=BoundingBox(x1=200, y1=0, x2=230, y2=100)),
-]
-
-report = analyze_detections(
-    detections,
-    regions=RegionSet.from_cuts((0.0, 0.5, 1.0), ("esquerda", "direita")),
+resultado = analyze_image(
+    Path("foto.jpg"),
+    ContourDetector(invert=True),
+    regions=RegionSet.from_cuts((0.0, 0.5, 1.0), ("minha_marca", "concorrencia")),
 )
-print(report.model_dump_json(indent=2))
+print(resultado.report.model_dump_json(indent=2))
 ```
+
+`analyze_image` aceita **qualquer** objeto que satisfaça o protocolo `Detector`
+— inclusive o seu.
+
+### Convenções da CLI
+
+- **stdout** carrega o resultado (tabela ou `--json`); **stderr** carrega erros e
+  avisos. Por isso `--json | jq` funciona e a barra de progresso não contamina o
+  pipe.
+- Exit codes: `0` sucesso, `1` erro de uso, `2` falha de processamento.
+- Toda mensagem de erro traz uma dica do que fazer. O stack trace nunca aparece
+  para o usuário — vai para `--log-file`, e a mensagem diz onde.
 
 ---
 
 ## Testes
 
-Suíte rápida — o ciclo de desenvolvimento, sem modelo, abaixo de 5 segundos:
-
 ```bash
-uv run pytest
-```
-
-Invariantes em profundidade — 500 exemplos por propriedade, cerca de um minuto:
-
-```bash
-HYPOTHESIS_PROFILE=thorough uv run pytest tests/property
-```
-
-Cobertura do domínio:
-
-```bash
-uv run pytest --cov=vitrine.domain --cov-report=term-missing
-```
-
-Tipos e lint:
-
-```bash
+uv run pytest                                              # suíte rápida, sem modelo
+uv run pytest -m slow                                      # exige o extra [yolo]
+HYPOTHESIS_PROFILE=thorough uv run pytest tests/property   # 500 exemplos por propriedade
+uv run pytest --cov=vitrine --cov-report=term-missing
 uv run mypy src/ tests/ && uv run ruff check . && uv run ruff format --check .
 ```
 
+Nenhuma imagem versionada nos testes: as fixtures são geradas em runtime, e o
+resultado esperado sai de uma conta, não de conferência visual. O
+`ContourDetector` recupera os retângulos sintéticos **pixel a pixel**, o que
+torna os testes de ponta a ponta verificações exatas em vez de aproximações.
+
 ### As invariantes
 
-Um exemplo escrito à mão prova que uma conta está certa. Uma invariante prova que
-ela continua certa para entradas que ninguém pensou em escrever. As oito:
+Um exemplo escrito à mão prova que uma conta está certa. Uma invariante prova
+que ela continua certa para entradas que ninguém pensou em escrever.
 
 | | Invariante |
 |---|---|
@@ -276,28 +347,26 @@ exata** em vez de tolerância. O raciocínio está em
 
 Sem eufemismo, e sem `TODO` escondido no código:
 
-- **Detector.** Não há `Detector` Protocol, não há `FakeDetector`, não há
-  `YoloDetector`. Fase 2.
-- **Qualquer coisa que toque em imagem.** Nada de OpenCV, Pillow ou NumPy — o
-  `pyproject` da Fase 1 declara Pydantic e mais nada, e
-  [um teste](tests/unit/test_architecture.py) impede que isso mude por descuido.
-- **Correção de perspectiva.** Fase 2, com quatro pontos informados à mão.
-  Detecção automática do retângulo da gôndola está fora do MVP: é um projeto
-  inteiro sozinho.
-- **CLI.** Fase 2.
-- **Renderização da imagem anotada e o GIF de demonstração.** Fase 2 — o GIF
-  virá de execução real, não de mockup.
-- **Lote, SQLite e histórico por PDV.** Fase 3.
-- **Métricas de detecção.** Fase 2. Hoje: não medido.
+- **Peso treinado em gôndola.** `YoloDetector` funciona, mas o peso padrão é de
+  COCO. Enquanto isso não mudar, as métricas de detecção ficam não medidas.
+- **Lote, SQLite e histórico por PDV** (`vitrine batch`, `vitrine history`).
+  Fase 3.
+- **GIF de demonstração e publicação no PyPI.** Fase 4. A imagem anotada no topo
+  já vem de execução real.
+- **Detecção automática do retângulo da gôndola.** Fora do MVP, por decisão.
 
 Limitações do que **já** existe, que não vão embora com mais código:
 
 - Prateleira totalmente vazia é invisível para o agrupamento.
 - Gôndola inclinada ou com perspectiva não corrigida degrada o agrupamento; o
-  relatório sinaliza via `spread_ratio` e um aviso, mas não corrige.
-- Prateleiras de alturas muito diferentes na mesma foto usam uma mediana de
-  altura global, que é o denominador errado para ambas.
+  relatório sinaliza via `spread_ratio`, mas não corrige sozinho.
+- Prateleiras de alturas muito diferentes na mesma foto usam uma mediana global,
+  que é o denominador errado para ambas.
 - Produto deitado distorce a altura mediana e portanto o limiar da foto inteira.
+- **O `ContourDetector` não serve para foto de loja real.** Ele encontra
+  retângulos de alto contraste; com iluminação de supermercado, embalagem
+  brilhante e produto encostado em produto, o resultado é ruim. Existe para
+  testes exatos e demonstração, e isso está dito no `--help` também.
 
 ---
 
@@ -305,16 +374,19 @@ Limitações do que **já** existe, que não vão embora com mais código:
 
 Código sob licença MIT.
 
-**SKU-110K** é distribuído para uso acadêmico e não comercial. Quando o detector
-entrar (Fase 2), o dataset será usado dentro desses termos, e nenhum peso
-treinado sobre ele será redistribuído comercialmente a partir deste repositório.
+**SKU-110K** é distribuído para uso acadêmico e não comercial. Quando o dataset
+for usado, será dentro desses termos, e nenhum peso treinado sobre ele será
+redistribuído comercialmente a partir deste repositório.
 
 **Nenhuma imagem neste repositório identifica loja, rede ou marca de cliente
-real.** Os testes usam detecções construídas à mão — retângulos com coordenadas
-escolhidas para que o resultado seja conferível no papel — e não imagens. Quando
-houver foto real de campo, ela entra anonimizada: sem fachada, sem placa de
-preço legível, sem crachá, sem rosto, e com o identificador de loja substituído
-por um código opaco. O procedimento será descrito aqui antes de a primeira foto
-entrar.
+real.** A imagem do topo é sintética, gerada por
+[`examples/demo.py`](examples/demo.py) — os retângulos coloridos não são produto
+de ninguém. Os testes usam detecções e imagens construídas à mão, com
+coordenadas escolhidas para que o resultado seja conferível no papel.
+
+Quando houver foto real de campo, ela entra anonimizada: sem fachada, sem placa
+de preço legível, sem crachá, sem rosto, e com o identificador de loja
+substituído por um código opaco. O procedimento será descrito aqui antes de a
+primeira foto entrar.
 
 Nada neste projeto faz scraping de imagem de terceiros.
