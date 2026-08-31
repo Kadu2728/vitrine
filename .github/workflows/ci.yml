@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  qualidade:
+    name: lint, tipos e suite rapida (py${{ matrix.python }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.12", "3.13"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Sincronizar ambiente
+        run: uv sync --python ${{ matrix.python }}
+
+      - name: ruff check
+        run: uv run ruff check .
+
+      - name: ruff format
+        run: uv run ruff format --check .
+
+      - name: mypy --strict
+        run: uv run mypy src/ tests/
+
+      - name: Suite rapida
+        # A suite rapida precisa caber no ciclo de desenvolvimento: menos de 5s.
+        run: uv run pytest --durations=10
+
+      - name: Cobertura do dominio
+        # O dominio e a unica coisa que existe na Fase 1; 90% e o piso.
+        run: uv run pytest --cov=vitrine.domain --cov-report=term-missing --cov-fail-under=90
+
+  invariantes:
+    name: invariantes (500 exemplos por propriedade)
+    runs-on: ubuntu-latest
+    # Roda separado porque nao cabe no orcamento de 5s da suite rapida, e
+    # porque e aqui que as propriedades sao de fato exercitadas.
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Sincronizar ambiente
+        run: uv sync
+
+      - name: Suite de propriedades em profundidade
+        env:
+          HYPOTHESIS_PROFILE: thorough
+        run: uv run pytest tests/property -v

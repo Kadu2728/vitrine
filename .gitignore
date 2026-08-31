@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+
+# Ambiente
+.venv/
+.python-version
+
+# Ferramentas
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.hypothesis/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+
+# Dados de campo -- nunca versionar foto de loja real
+fotos/
+saidas/
+*.db
+
+# Sistema
+.DS_Store
+Thumbs.db
