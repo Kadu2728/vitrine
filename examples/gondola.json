@@ -1,0 +1,330 @@
+{
+  "schema_version": "1.1",
+  "status": "ok",
+  "source": "LOJA_DEMO",
+  "image": {
+    "name": "gondola.png",
+    "width": 900,
+    "height": 620,
+    "exif_rotated": false,
+    "downscale": 1.0,
+    "rectified": false
+  },
+  "detector": {
+    "name": "contour",
+    "version": "opencv-5.0.0",
+    "weights": null,
+    "weights_sha256": null,
+    "confidence_threshold": 0.0,
+    "iou_threshold": 0.0
+  },
+  "total_detections": 24,
+  "duplicates_removed": 0,
+  "shelf_count": 3,
+  "shelves": [
+    {
+      "index": 0,
+      "y_top": 36.0,
+      "y_bottom": 157.0,
+      "extent": {
+        "kind": "envelope",
+        "x_min": 40.0,
+        "x_max": 819.0
+      },
+      "detection_count": 9,
+      "median_product_width": 75.0,
+      "median_product_height": 121.0,
+      "occupied_length": 675.0,
+      "occupancy": 0.8664955070603337,
+      "spread_ratio": 0.0,
+      "boxes": [
+        {
+          "x1": 40.0,
+          "y1": 36.0,
+          "x2": 115.0,
+          "y2": 157.0
+        },
+        {
+          "x1": 128.0,
+          "y1": 36.0,
+          "x2": 203.0,
+          "y2": 157.0
+        },
+        {
+          "x1": 216.0,
+          "y1": 36.0,
+          "x2": 291.0,
+          "y2": 157.0
+        },
+        {
+          "x1": 304.0,
+          "y1": 36.0,
+          "x2": 379.0,
+          "y2": 157.0
+        },
+        {
+          "x1": 392.0,
+          "y1": 36.0,
+          "x2": 467.0,
+          "y2": 157.0
+        },
+        {
+          "x1": 480.0,
+          "y1": 36.0,
+          "x2": 555.0,
+          "y2": 157.0
+        },
+        {
+          "x1": 568.0,
+          "y1": 36.0,
+          "x2": 643.0,
+          "y2": 157.0
+        },
+        {
+          "x1": 656.0,
+          "y1": 36.0,
+          "x2": 731.0,
+          "y2": 157.0
+        },
+        {
+          "x1": 744.0,
+          "y1": 36.0,
+          "x2": 819.0,
+          "y2": 157.0
+        }
+      ],
+      "regions": [
+        {
+          "region": "minha_marca",
+          "count": 4,
+          "count_share": 0.4444444444444444,
+          "occupied_length": 337.5,
+          "linear_share": 0.5,
+          "occupancy": 0.8664955070603337
+        },
+        {
+          "region": "concorrencia",
+          "count": 5,
+          "count_share": 0.5555555555555556,
+          "occupied_length": 337.5,
+          "linear_share": 0.5,
+          "occupancy": 0.8664955070603337
+        }
+      ],
+      "gaps": []
+    },
+    {
+      "index": 1,
+      "y_top": 206.0,
+      "y_bottom": 327.0,
+      "extent": {
+        "kind": "envelope",
+        "x_min": 40.0,
+        "x_max": 819.0
+      },
+      "detection_count": 6,
+      "median_product_width": 75.0,
+      "median_product_height": 121.0,
+      "occupied_length": 450.0,
+      "occupancy": 0.5776636713735558,
+      "spread_ratio": 0.0,
+      "boxes": [
+        {
+          "x1": 40.0,
+          "y1": 206.0,
+          "x2": 115.0,
+          "y2": 327.0
+        },
+        {
+          "x1": 128.0,
+          "y1": 206.0,
+          "x2": 203.0,
+          "y2": 327.0
+        },
+        {
+          "x1": 216.0,
+          "y1": 206.0,
+          "x2": 291.0,
+          "y2": 327.0
+        },
+        {
+          "x1": 568.0,
+          "y1": 206.0,
+          "x2": 643.0,
+          "y2": 327.0
+        },
+        {
+          "x1": 656.0,
+          "y1": 206.0,
+          "x2": 731.0,
+          "y2": 327.0
+        },
+        {
+          "x1": 744.0,
+          "y1": 206.0,
+          "x2": 819.0,
+          "y2": 327.0
+        }
+      ],
+      "regions": [
+        {
+          "region": "minha_marca",
+          "count": 3,
+          "count_share": 0.5,
+          "occupied_length": 225.0,
+          "linear_share": 0.5,
+          "occupancy": 0.5776636713735558
+        },
+        {
+          "region": "concorrencia",
+          "count": 3,
+          "count_share": 0.5,
+          "occupied_length": 225.0,
+          "linear_share": 0.5,
+          "occupancy": 0.5776636713735558
+        }
+      ],
+      "gaps": [
+        {
+          "x_start": 291.0,
+          "x_end": 568.0,
+          "y_top": 206.0,
+          "y_bottom": 327.0,
+          "width_ratio": 3.6933333333333334
+        }
+      ]
+    },
+    {
+      "index": 2,
+      "y_top": 376.0,
+      "y_bottom": 497.0,
+      "extent": {
+        "kind": "envelope",
+        "x_min": 40.0,
+        "x_max": 819.0
+      },
+      "detection_count": 9,
+      "median_product_width": 75.0,
+      "median_product_height": 121.0,
+      "occupied_length": 675.0,
+      "occupancy": 0.8664955070603337,
+      "spread_ratio": 0.0,
+      "boxes": [
+        {
+          "x1": 40.0,
+          "y1": 376.0,
+          "x2": 115.0,
+          "y2": 497.0
+        },
+        {
+          "x1": 128.0,
+          "y1": 376.0,
+          "x2": 203.0,
+          "y2": 497.0
+        },
+        {
+          "x1": 216.0,
+          "y1": 376.0,
+          "x2": 291.0,
+          "y2": 497.0
+        },
+        {
+          "x1": 304.0,
+          "y1": 376.0,
+          "x2": 379.0,
+          "y2": 497.0
+        },
+        {
+          "x1": 392.0,
+          "y1": 376.0,
+          "x2": 467.0,
+          "y2": 497.0
+        },
+        {
+          "x1": 480.0,
+          "y1": 376.0,
+          "x2": 555.0,
+          "y2": 497.0
+        },
+        {
+          "x1": 568.0,
+          "y1": 376.0,
+          "x2": 643.0,
+          "y2": 497.0
+        },
+        {
+          "x1": 656.0,
+          "y1": 376.0,
+          "x2": 731.0,
+          "y2": 497.0
+        },
+        {
+          "x1": 744.0,
+          "y1": 376.0,
+          "x2": 819.0,
+          "y2": 497.0
+        }
+      ],
+      "regions": [
+        {
+          "region": "minha_marca",
+          "count": 4,
+          "count_share": 0.4444444444444444,
+          "occupied_length": 337.5,
+          "linear_share": 0.5,
+          "occupancy": 0.8664955070603337
+        },
+        {
+          "region": "concorrencia",
+          "count": 5,
+          "count_share": 0.5555555555555556,
+          "occupied_length": 337.5,
+          "linear_share": 0.5,
+          "occupancy": 0.8664955070603337
+        }
+      ],
+      "gaps": []
+    }
+  ],
+  "regions": [
+    {
+      "region": "minha_marca",
+      "count": 11,
+      "count_share": 0.4583333333333333,
+      "occupied_length": 900.0,
+      "linear_share": 0.5,
+      "occupancy": 0.7702182284980744
+    },
+    {
+      "region": "concorrencia",
+      "count": 13,
+      "count_share": 0.5416666666666666,
+      "occupied_length": 900.0,
+      "linear_share": 0.5,
+      "occupancy": 0.7702182284980744
+    }
+  ],
+  "params": {
+    "shelf_gap_ratio": 0.5,
+    "max_shelf_spread_ratio": 1.5,
+    "gap_min_width_ratio": 1.0,
+    "dedup_iou": 0.9,
+    "extent_kind": "envelope",
+    "explicit_extent": null,
+    "regions": {
+      "regions": [
+        {
+          "name": "minha_marca",
+          "start": 0.0,
+          "end": 0.5
+        },
+        {
+          "name": "concorrencia",
+          "start": 0.5,
+          "end": 1.0
+        }
+      ]
+    }
+  },
+  "warnings": []
+}
