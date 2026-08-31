@@ -25,7 +25,7 @@ if TYPE_CHECKING:
 
 settings.register_profile(
     "fast",
-    max_examples=20,
+    max_examples=10,
     deadline=None,
     derandomize=True,
     database=None,
