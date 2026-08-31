@@ -25,6 +25,7 @@ from typing import TYPE_CHECKING, Annotated
 
 import cv2
 import typer
+from pydantic import ValidationError
 from rich.console import Console
 from rich.table import Table
 
@@ -415,8 +416,9 @@ def _parse_regions(cuts: str | None, names: str | None) -> RegionSet | None:
         return RegionSet.from_cuts(valores, rotulos)
     except ValueError as exc:
         raise UsageError(
-            f"As regioes informadas nao formam uma particao valida: {exc}",
-            "As fronteiras precisam comecar em 0, terminar em 1 e ser crescentes.",
+            f"Regioes invalidas: {_mensagem_limpa(exc)}",
+            "As fronteiras precisam comecar em 0, terminar em 1 e ser crescentes. "
+            "Exemplo: --cuts 0,0.5,1",
         ) from exc
 
 
@@ -531,6 +533,22 @@ def _print_report(report: ShareReport, out: Path | None) -> None:
         err_console.print(f"[yellow]aviso:[/yellow] {aviso}")
     if out is not None:
         console.print(f"[dim]Artefatos gravados em {out}[/dim]")
+
+
+def _mensagem_limpa(exc: Exception) -> str:
+    """Extrai a frase util de um erro de validacao.
+
+    O ``str()`` de um ``ValidationError`` do Pydantic traz contagem de erros,
+    nome do modelo, tipo interno e um link para a documentacao da biblioteca.
+    Nada disso ajuda quem digitou uma opcao errada na linha de comando -- e
+    despejar isso no terminal e a versao educada de imprimir stack trace.
+    """
+    if isinstance(exc, ValidationError):
+        erros = exc.errors()
+        if erros:
+            texto = str(erros[0].get("msg", ""))
+            return texto.removeprefix("Value error, ").strip() or "valor invalido"
+    return str(exc)
 
 
 def _report_error(erro: VitrineError, log_file: Path) -> None:

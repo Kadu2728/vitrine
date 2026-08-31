@@ -176,6 +176,17 @@ class TestErrosDeUso:
         assert resultado.exit_code == EXIT_USAGE
         assert "terminar em 1" in resultado.output
 
+    def test_erro_de_regiao_nao_vaza_o_pydantic(self, tmp_path: Path) -> None:
+        """Despejar ValidationError no terminal e a versao educada de stack trace."""
+        resultado = runner.invoke(app, ["analyze", str(_gondola(tmp_path)), "--cuts", "0,0.5,0.9"])
+        assert "validation error" not in resultado.output.lower()
+        assert "pydantic" not in resultado.output.lower()
+        assert "RegionSet" not in resultado.output
+        # O Rich quebra linha no meio da frase; normalizar o espaco evita um
+        # teste que depende da largura do terminal.
+        corrido = " ".join(resultado.output.split())
+        assert "cobertura termina em 0.9" in corrido
+
     def test_nomes_sem_cuts(self, tmp_path: Path) -> None:
         resultado = runner.invoke(
             app, ["analyze", str(_gondola(tmp_path)), "--region-names", "a,b"]
