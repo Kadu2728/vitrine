@@ -1,4 +1,7 @@
 # Dependencias da pagina de demonstracao, para deploy no Hugging Face Spaces.
-# A pagina consome a biblioteca publicada; nao ha atalho para dentro do pacote.
-vitrine-shelf>=0.1.0
+#
+# A pagina consome a biblioteca como qualquer outro cliente faria -- nao ha
+# atalho para dentro do pacote. Enquanto o vitrine-shelf nao estiver publicado
+# no PyPI (Fase 4), instala direto do repositorio.
+git+https://github.com/Kadu2728/vitrine.git
 gradio>=5.0

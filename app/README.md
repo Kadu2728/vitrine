@@ -46,13 +46,9 @@ rodando, a sua maquina fica acessivel pela internet -- use com consciencia disso
 2. Copie `gradio_app.py`, `requirements.txt` e este `README.md` para a raiz do
    Space (o bloco YAML no topo deste arquivo e o que o Spaces le como
    configuracao).
-3. `git push`. O build instala `vitrine-shelf` do PyPI -- o que exige que o
-   pacote esteja publicado (Fase 4). Ate la, troque a linha do
-   `requirements.txt` por uma instalacao direta do repositorio:
-
-   ```
-   git+https://github.com/<usuario>/<repo>.git
-   ```
+3. `git push`. O build instala a biblioteca direto do repositorio publico --
+   o `requirements.txt` ja aponta para la. Quando o pacote for publicado no
+   PyPI (Fase 4), basta trocar por `vitrine-shelf`.
 
 ## Limitacao que a pagina declara em primeiro plano
 
