@@ -15,7 +15,7 @@ from typing import TYPE_CHECKING
 import pytest
 from typer.testing import CliRunner
 
-from helpers import synthetic_shelf, write_image
+from helpers import corrido, synthetic_shelf, write_image
 from vitrine.cli import EXIT_FAILURE, EXIT_OK, app
 from vitrine.errors import VitrineError
 from vitrine.eval.dataset import Sample, load_split
@@ -148,8 +148,8 @@ class TestComandoBenchmark:
         raiz = build_dataset(tmp_path / "ds", images=1)
         resultado = runner.invoke(app, ["benchmark", str(raiz), "--detector", "contour"])
         assert resultado.exit_code == EXIT_OK
-        assert "Recall" in resultado.output
-        assert "AP@0.5" in resultado.output
+        assert "Recall" in corrido(resultado.output)
+        assert "AP@0.5" in corrido(resultado.output)
 
     def test_limit_reduz_o_conjunto(self, tmp_path: Path) -> None:
         raiz = build_dataset(tmp_path / "ds", images=4)
@@ -161,7 +161,7 @@ class TestComandoBenchmark:
     def test_dataset_inexistente(self, tmp_path: Path) -> None:
         resultado = runner.invoke(app, ["benchmark", str(tmp_path / "nada")])
         assert resultado.exit_code == EXIT_FAILURE
-        assert "pasta de imagens" in resultado.output
+        assert "pasta de imagens" in corrido(resultado.output)
 
     def test_ajuda_diz_o_que_acontece_com_numero_ruim(self) -> None:
         assert "inclusive se for ruim" in runner.invoke(app, ["benchmark", "--help"]).output

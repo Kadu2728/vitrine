@@ -90,9 +90,11 @@ Numeros de execucao real, reproduziveis pelos comandos da tabela.
 
 ### O orcamento de 5 segundos: nao cumprido, e por que
 
-A regra do projeto pede suite rapida abaixo de 5 s. **Ela nao esta sendo
-cumprida nesta maquina**: a suite completa leva de 29 s a 36 s, e o laco interno
-cerca de 14 s.
+A regra do projeto pede suite rapida abaixo de 5 s.
+
+**Na CI, com 7,5 s, ela quase e cumprida.** Nesta maquina, nao: a suite completa
+leva de 24 s a 36 s e o laco interno cerca de 13 s. A diferenca de quase cinco
+vezes para o mesmo codigo mostra onde esta o problema.
 
 O que foi feito a respeito, com medicao:
 
@@ -116,6 +118,9 @@ invocacoes de CLI; o custo e real e esta declarado em vez de disfarcado.
   de Application Control nesta maquina).
 - Cobertura com o tracer em Python puro (`COVERAGE_CORE=pytrace`): a DLL do
   tracer em C tambem e bloqueada pela mesma politica.
+- **A CI roda a suite completa em 7,5 s** (Linux, runner do GitHub), contra
+  24 s a 36 s nesta maquina. Isso confirma o diagnostico: o custo esta no
+  ambiente local, nao na suite. **O numero de tempo que vale e o da CI.**
 - **Os tempos desta maquina tem variancia patologica**, aparentemente por
   interceptacao na criacao de processo e de arquivo. A mesma suite ja mediu
   2,75 s e 413 s em execucoes consecutivas. Cada teste de historico cria tres

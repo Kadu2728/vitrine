@@ -82,3 +82,15 @@ def write_image(path: Path, pixels: NDArray[np.uint8]) -> Path:
     if not cv2.imwrite(str(path), pixels):
         raise RuntimeError(f"nao consegui gravar {path}")
     return path
+
+
+def corrido(texto: str) -> str:
+    """Normaliza o espaco em branco da saida do Rich.
+
+    O Rich quebra linha conforme a largura do terminal, entao uma frase pode
+    chegar partida no meio -- e a largura muda entre a maquina de quem
+    desenvolve e o runner da CI, onde os caminhos temporarios sao mais longos.
+    Assertiva sobre texto de saida precisa ser imune a isso, senao o teste mede
+    o terminal em vez do comportamento.
+    """
+    return " ".join(texto.split())

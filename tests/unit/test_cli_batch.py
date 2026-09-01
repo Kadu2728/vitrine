@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING
 import pytest
 from typer.testing import CliRunner
 
-from helpers import synthetic_shelf, write_image
+from helpers import corrido, synthetic_shelf, write_image
 from vitrine.cli import EXIT_FAILURE, EXIT_OK, EXIT_USAGE, app
 
 if TYPE_CHECKING:
@@ -44,8 +44,8 @@ def povoar(pasta: Path, quantidade: int = 3) -> Path:
 class TestAjuda:
     def test_batch_explica_a_retomada(self) -> None:
         saida = runner.invoke(app, ["batch", "--help"]).output
-        assert "resumivel" in saida
-        assert "Ctrl+C" in saida
+        assert "resumivel" in corrido(saida)
+        assert "Ctrl+C" in corrido(saida)
 
     def test_batch_mostra_como_ler_o_log(self) -> None:
         assert "jq" in runner.invoke(app, ["batch", "--help"]).output
@@ -56,7 +56,7 @@ class TestAjuda:
     def test_os_quatro_comandos_aparecem(self) -> None:
         saida = runner.invoke(app, ["--help"]).output
         for comando in ("analyze", "batch", "benchmark", "history"):
-            assert comando in saida
+            assert comando in corrido(saida)
 
 
 class TestBatch:
@@ -96,7 +96,7 @@ class TestBatch:
             app, ["batch", str(povoar(tmp_path / "fotos", 2)), "--out", str(tmp_path / "out")]
         )
         assert resultado.exit_code == EXIT_OK
-        assert "Processadas agora" in resultado.output
+        assert "Processadas agora" in corrido(resultado.output)
 
     def test_imagem_ruim_nao_derruba_o_lote(self, tmp_path: Path) -> None:
         pasta = povoar(tmp_path / "fotos", 2)
@@ -119,21 +119,21 @@ class TestBatch:
     def test_pasta_inexistente(self, tmp_path: Path) -> None:
         resultado = runner.invoke(app, ["batch", str(tmp_path / "fantasma")])
         assert resultado.exit_code == EXIT_FAILURE
-        assert "nao e uma pasta" in resultado.output
+        assert "nao e uma pasta" in corrido(resultado.output)
 
     def test_detector_desconhecido(self, tmp_path: Path) -> None:
         resultado = runner.invoke(
             app, ["batch", str(povoar(tmp_path / "fotos", 1)), "--detector", "magico"]
         )
         assert resultado.exit_code == EXIT_USAGE
-        assert "contour" in resultado.output
+        assert "contour" in corrido(resultado.output)
 
     def test_weights_com_contour(self, tmp_path: Path) -> None:
         resultado = runner.invoke(
             app, ["batch", str(povoar(tmp_path / "fotos", 1)), "--weights", "p.pt"]
         )
         assert resultado.exit_code == EXIT_USAGE
-        assert "--detector yolo" in resultado.output
+        assert "--detector yolo" in corrido(resultado.output)
 
 
 class TestCicloCompleto:
@@ -183,8 +183,8 @@ class TestCicloCompleto:
         )
         resultado = runner.invoke(app, ["history", "--store-id", "LOJA_12", "--db", str(banco)])
         assert resultado.exit_code == EXIT_OK
-        assert "LOJA_12" in resultado.output
-        assert "Ocupacao" in resultado.output
+        assert "LOJA_12" in corrido(resultado.output)
+        assert "Ocupacao" in corrido(resultado.output)
 
     def test_sem_store_id_nao_cria_banco(self, tmp_path: Path) -> None:
         banco = tmp_path / "vitrine.db"
@@ -208,7 +208,7 @@ class TestHistory:
             app, ["history", "--store-id", "LOJA_1", "--db", str(tmp_path / "nada.db")]
         )
         assert resultado.exit_code == EXIT_FAILURE
-        assert "vitrine batch" in resultado.output
+        assert "vitrine batch" in corrido(resultado.output)
 
     def test_pdv_sem_historico_lista_os_conhecidos(self, tmp_path: Path) -> None:
         banco = tmp_path / "vitrine.db"
@@ -227,5 +227,5 @@ class TestHistory:
         )
         resultado = runner.invoke(app, ["history", "--store-id", "LOJA_99", "--db", str(banco)])
         assert resultado.exit_code == EXIT_OK
-        assert "Sem historico" in resultado.output
-        assert "LOJA_12" in resultado.output
+        assert "Sem historico" in corrido(resultado.output)
+        assert "LOJA_12" in corrido(resultado.output)

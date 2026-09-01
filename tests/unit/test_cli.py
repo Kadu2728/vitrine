@@ -15,7 +15,7 @@ import numpy as np
 import pytest
 from typer.testing import CliRunner
 
-from helpers import synthetic_shelf, write_image
+from helpers import corrido, synthetic_shelf, write_image
 from vitrine.cli import EXIT_FAILURE, EXIT_OK, EXIT_USAGE, app
 
 if TYPE_CHECKING:
@@ -43,17 +43,17 @@ class TestAjuda:
     def test_ajuda_geral_descreve_o_produto(self) -> None:
         resultado = runner.invoke(app, ["--help"])
         assert resultado.exit_code == EXIT_OK
-        assert "ponto de venda" in resultado.output
+        assert "ponto de venda" in corrido(resultado.output)
 
     def test_ajuda_do_analyze_traz_exemplo_real(self) -> None:
         resultado = runner.invoke(app, ["analyze", "--help"])
         assert resultado.exit_code == EXIT_OK
-        assert "vitrine analyze foto.jpg" in resultado.output
+        assert "vitrine analyze foto.jpg" in corrido(resultado.output)
 
     def test_ajuda_declara_a_unidade_dos_parametros(self) -> None:
         saida = runner.invoke(app, ["analyze", "--help"]).output
-        assert "pixels" in saida
-        assert "fracao" in saida
+        assert "pixels" in corrido(saida)
+        assert "fracao" in corrido(saida)
 
     def test_ajuda_avisa_que_contour_e_ruim_em_foto_real(self) -> None:
         """A limitacao do detector padrao precisa estar onde o usuario ve."""
@@ -64,8 +64,8 @@ class TestExecucaoBemSucedida:
     def test_tabela_no_terminal(self, tmp_path: Path) -> None:
         resultado = runner.invoke(app, ["analyze", str(_gondola(tmp_path))])
         assert resultado.exit_code == EXIT_OK
-        assert "6" in resultado.output
-        assert "prateleira" in resultado.output
+        assert "6" in corrido(resultado.output)
+        assert "prateleira" in corrido(resultado.output)
 
     def test_json_em_stdout_e_valido(self, tmp_path: Path) -> None:
         resultado = runner.invoke(app, ["analyze", str(_gondola(tmp_path)), "--json"])
@@ -126,8 +126,8 @@ class TestExecucaoBemSucedida:
         caminho = write_image(tmp_path / "vazia.png", np.zeros((120, 120, 3), dtype=np.uint8))
         resultado = runner.invoke(app, ["analyze", str(caminho)])
         assert resultado.exit_code == EXIT_OK
-        assert "Nenhum produto detectado" in resultado.output
-        assert "--detector yolo" in resultado.output
+        assert "Nenhum produto detectado" in corrido(resultado.output)
+        assert "--detector yolo" in corrido(resultado.output)
 
 
 class TestInversaoDePolaridade:
@@ -154,14 +154,14 @@ class TestInversaoDePolaridade:
     def test_a_dica_de_saida_vazia_menciona_invert(self, tmp_path: Path) -> None:
         caminho = self._gondola_escura_em_fundo_claro(tmp_path)
         resultado = runner.invoke(app, ["analyze", str(caminho)])
-        assert "--invert" in resultado.output
+        assert "--invert" in corrido(resultado.output)
 
     def test_invert_nao_se_aplica_ao_yolo(self, tmp_path: Path) -> None:
         resultado = runner.invoke(
             app, ["analyze", str(_gondola(tmp_path)), "--detector", "yolo", "--invert"]
         )
         assert resultado.exit_code == EXIT_USAGE
-        assert "contorno" in resultado.output
+        assert "contorno" in corrido(resultado.output)
 
 
 class TestErrosDeUso:
@@ -170,40 +170,38 @@ class TestErrosDeUso:
     def test_detector_desconhecido(self, tmp_path: Path) -> None:
         resultado = runner.invoke(app, ["analyze", str(_gondola(tmp_path)), "--detector", "magico"])
         assert resultado.exit_code == EXIT_USAGE
-        assert "contour" in resultado.output
+        assert "contour" in corrido(resultado.output)
 
     def test_weights_com_detector_sem_modelo(self, tmp_path: Path) -> None:
         resultado = runner.invoke(app, ["analyze", str(_gondola(tmp_path)), "--weights", "peso.pt"])
         assert resultado.exit_code == EXIT_USAGE
-        assert "--detector yolo" in resultado.output
+        assert "--detector yolo" in corrido(resultado.output)
 
     def test_cuts_nao_numericos(self, tmp_path: Path) -> None:
         resultado = runner.invoke(app, ["analyze", str(_gondola(tmp_path)), "--cuts", "a,b"])
         assert resultado.exit_code == EXIT_USAGE
-        assert "--cuts 0,0.4,1" in resultado.output
+        assert "--cuts 0,0.4,1" in corrido(resultado.output)
 
     def test_cuts_que_nao_formam_particao(self, tmp_path: Path) -> None:
         resultado = runner.invoke(app, ["analyze", str(_gondola(tmp_path)), "--cuts", "0,0.5,0.9"])
         assert resultado.exit_code == EXIT_USAGE
-        assert "terminar em 1" in resultado.output
+        assert "terminar em 1" in corrido(resultado.output)
 
     def test_erro_de_regiao_nao_vaza_o_pydantic(self, tmp_path: Path) -> None:
         """Despejar ValidationError no terminal e a versao educada de stack trace."""
         resultado = runner.invoke(app, ["analyze", str(_gondola(tmp_path)), "--cuts", "0,0.5,0.9"])
-        assert "validation error" not in resultado.output.lower()
-        assert "pydantic" not in resultado.output.lower()
-        assert "RegionSet" not in resultado.output
-        # O Rich quebra linha no meio da frase; normalizar o espaco evita um
-        # teste que depende da largura do terminal.
-        corrido = " ".join(resultado.output.split())
-        assert "cobertura termina em 0.9" in corrido
+        assert "validation error" not in corrido(resultado.output).lower()
+        assert "pydantic" not in corrido(resultado.output).lower()
+        assert "RegionSet" not in corrido(resultado.output)
+        # A frase util precisa sobreviver a limpeza.
+        assert "cobertura termina em 0.9" in corrido(resultado.output)
 
     def test_nomes_sem_cuts(self, tmp_path: Path) -> None:
         resultado = runner.invoke(
             app, ["analyze", str(_gondola(tmp_path)), "--region-names", "a,b"]
         )
         assert resultado.exit_code == EXIT_USAGE
-        assert "--cuts" in resultado.output
+        assert "--cuts" in corrido(resultado.output)
 
     def test_nomes_em_quantidade_errada(self, tmp_path: Path) -> None:
         resultado = runner.invoke(
@@ -211,7 +209,7 @@ class TestErrosDeUso:
             ["analyze", str(_gondola(tmp_path)), "--cuts", "0,0.5,1", "--region-names", "so_um"],
         )
         assert resultado.exit_code == EXIT_USAGE
-        assert "2 nomes" in resultado.output
+        assert "2 nomes" in corrido(resultado.output)
 
     def test_ponto_de_perspectiva_malformado(self, tmp_path: Path) -> None:
         resultado = runner.invoke(
@@ -227,12 +225,12 @@ class TestErrosDeUso:
             ],
         )
         assert resultado.exit_code == EXIT_USAGE
-        assert "x,y" in resultado.output
+        assert "x,y" in corrido(resultado.output)
 
     def test_extent_invertido(self, tmp_path: Path) -> None:
         resultado = runner.invoke(app, ["analyze", str(_gondola(tmp_path)), "--extent", "900,100"])
         assert resultado.exit_code == EXIT_USAGE
-        assert "x_max maior que x_min" in resultado.output
+        assert "x_max maior que x_min" in corrido(resultado.output)
 
 
 class TestFalhasDeProcessamento:
@@ -241,7 +239,7 @@ class TestFalhasDeProcessamento:
     def test_imagem_inexistente(self, tmp_path: Path) -> None:
         resultado = runner.invoke(app, ["analyze", str(tmp_path / "fantasma.jpg")])
         assert resultado.exit_code == EXIT_FAILURE
-        assert "nao encontrada" in resultado.output
+        assert "nao encontrada" in corrido(resultado.output)
 
     def test_perspectiva_fora_da_imagem(self, tmp_path: Path) -> None:
         resultado = runner.invoke(
@@ -257,7 +255,7 @@ class TestFalhasDeProcessamento:
             ],
         )
         assert resultado.exit_code == EXIT_FAILURE
-        assert "fora da imagem" in resultado.output
+        assert "fora da imagem" in corrido(resultado.output)
 
 
 class TestTratamentoDeErro:
@@ -266,8 +264,8 @@ class TestTratamentoDeErro:
             app,
             ["analyze", str(tmp_path / "fantasma.jpg"), "--log-file", str(tmp_path / "v.log")],
         )
-        assert "Traceback" not in resultado.output
-        assert 'File "' not in resultado.output
+        assert "Traceback" not in corrido(resultado.output)
+        assert 'File "' not in corrido(resultado.output)
 
     def test_o_traceback_completo_vai_para_o_log(self, tmp_path: Path) -> None:
         log = tmp_path / "vitrine.log"
@@ -277,5 +275,5 @@ class TestTratamentoDeErro:
 
     def test_toda_mensagem_de_erro_traz_uma_dica(self, tmp_path: Path) -> None:
         resultado = runner.invoke(app, ["analyze", str(tmp_path / "fantasma.jpg")])
-        assert "erro:" in resultado.output
-        assert "->" in resultado.output
+        assert "erro:" in corrido(resultado.output)
+        assert "->" in corrido(resultado.output)
