@@ -148,6 +148,9 @@ ignore = [
 "tests/*" = ["D100", "D101", "D102", "D103", "D104"]
 # A pagina de demonstracao lida com o Gradio, que passa Any por toda parte.
 "app/*" = ["ANN401"]
+# Num notebook o import depois do %pip install nao e desleixo, e a ordem
+# obrigatoria: a biblioteca precisa existir antes de ser importada.
+"notebooks/*" = ["E402"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"

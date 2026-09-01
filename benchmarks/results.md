@@ -82,10 +82,10 @@ Numeros de execucao real, reproduziveis pelos comandos da tabela.
 
 | Metrica | Valor | Comando |
 |---|---|---|
-| Testes da suite rapida | 279 passando, 1 pulado | `uv run pytest` |
+| Testes da suite rapida | 287 passando, 1 pulado | `uv run pytest` |
 | Tempo da suite rapida | 4,7 s / 5,0 s / 6,6 s em tres execucoes | `uv run pytest` |
 | Cobertura de `vitrine.domain` | 100% de linhas e de ramos | `uv run pytest --cov=vitrine.domain` |
-| Cobertura do pacote inteiro | 92% de linhas | `uv run pytest --cov=vitrine` |
+| Cobertura do pacote inteiro | 92% de linhas; 98% excluindo `vision/yolo.py`, que so roda com o extra instalado | `uv run pytest --cov=vitrine` |
 | Invariantes de propriedade | 18 propriedades x 500 exemplos, 58 s | `HYPOTHESIS_PROFILE=thorough uv run pytest tests/property` |
 
 O teste pulado e o de `vitrine/yolo.py`, que exige o extra `yolo`. Por isso esse
