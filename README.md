@@ -428,7 +428,7 @@ uv run pytest                                              # tudo, sem modelo
 uv run pytest -m "not slow and not integration"            # laço interno: só domínio e visão
 uv run pytest -m slow                                      # exige o extra [yolo]
 HYPOTHESIS_PROFILE=thorough uv run pytest tests/property   # 500 exemplos por propriedade
-uv run pytest --cov=vitrine --cov-report=term-missing
+uv run pytest --cov=src/vitrine --cov-report=term-missing
 uv run mypy src/ tests/ && uv run ruff check . && uv run ruff format --check .
 ```
 

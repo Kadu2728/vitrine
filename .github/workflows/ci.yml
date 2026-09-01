@@ -48,8 +48,12 @@ jobs:
         run: uv run pytest --durations=15
 
       - name: Cobertura do dominio
-        # O dominio carrega toda a matematica; o piso aqui e alto de proposito.
-        run: uv run pytest --cov=vitrine.domain --cov-report=term-missing --cov-fail-under=95
+        # Alvo pelo caminho, nao pelo nome do modulo: a forma 'vitrine.domain'
+        # faz a cobertura importar o pacote antes da hora, o que puxa cv2 e
+        # numpy e estoura com 'cannot load module more than once per process'.
+        run: >-
+          uv run pytest --cov=src/vitrine/domain --cov-report=term-missing
+          --cov-fail-under=95
 
       - name: Cobertura do pacote
         # vision/yolo.py fica de fora por so ser exercitado com o extra [yolo],

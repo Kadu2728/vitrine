@@ -84,7 +84,7 @@ Numeros de execucao real, reproduziveis pelos comandos da tabela.
 |---|---|---|
 | Suite completa | 358 passando, 1 pulado, 1 desmarcado | `uv run pytest` |
 | Laco interno (sem disco nem banco) | 221 passando | `uv run pytest -m "not slow and not integration"` |
-| Cobertura de `vitrine.domain` | 100% de linhas e de ramos | `uv run pytest --cov=vitrine.domain` |
+| Cobertura de `vitrine.domain` | 100% de linhas e de ramos | `uv run pytest --cov=src/vitrine/domain` |
 | Cobertura do pacote | 95% de linhas, excluindo `vision/yolo.py` | `uv run pytest --cov=vitrine --cov-config=.coveragerc-ci` |
 | Invariantes de propriedade | 18 propriedades x 500 exemplos | `HYPOTHESIS_PROFILE=thorough uv run pytest tests/property` |
 
