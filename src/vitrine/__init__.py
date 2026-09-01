@@ -22,6 +22,7 @@ O detector e injetado, nunca importado pela logica: ``analyze_image`` aceita
 qualquer coisa que satisfaca o protocolo ``Detector``.
 """
 
+from vitrine.batch.runner import BatchOptions, BatchSummary, DetectorSpec, run_batch
 from vitrine.domain.dedup import deduplicate
 from vitrine.domain.gaps import find_gaps
 from vitrine.domain.models import (
@@ -51,6 +52,7 @@ from vitrine.errors import (
 )
 from vitrine.pipeline import AnalysisResult, analyze_image
 from vitrine.render.annotate import annotate
+from vitrine.storage.repository import Repository, Visit
 from vitrine.vision.contour import ContourDetector
 from vitrine.vision.fake import FakeDetector
 from vitrine.vision.protocols import Detector
@@ -61,12 +63,15 @@ __all__ = [
     "SCHEMA_VERSION",
     "AnalysisParams",
     "AnalysisResult",
+    "BatchOptions",
+    "BatchSummary",
     "BoundingBox",
     "ContourDetector",
     "Detection",
     "Detector",
     "DetectorError",
     "DetectorInfo",
+    "DetectorSpec",
     "FakeDetector",
     "Gap",
     "ImageLoadError",
@@ -75,11 +80,13 @@ __all__ = [
     "Region",
     "RegionSet",
     "RegionShare",
+    "Repository",
     "ShareReport",
     "Shelf",
     "ShelfExtent",
     "ShelfReport",
     "UsageError",
+    "Visit",
     "VitrineError",
     "__version__",
     "analyze_detections",
@@ -88,4 +95,5 @@ __all__ = [
     "deduplicate",
     "find_gaps",
     "group_into_shelves",
+    "run_batch",
 ]

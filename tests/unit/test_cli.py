@@ -12,6 +12,7 @@ import json
 from typing import TYPE_CHECKING
 
 import numpy as np
+import pytest
 from typer.testing import CliRunner
 
 from helpers import synthetic_shelf, write_image
@@ -19,6 +20,16 @@ from vitrine.cli import EXIT_FAILURE, EXIT_OK, EXIT_USAGE, app
 
 if TYPE_CHECKING:
     from pathlib import Path
+
+pytestmark = pytest.mark.integration
+"""Estes testes criam arquivos, bancos e invocam a CLI inteira.
+
+Continuam rodando por padrao -- marcar nao e esconder. A marca existe para
+que quem esta mexendo no dominio possa rodar
+``pytest -m 'not slow and not integration'`` e ter resposta em menos de dois
+segundos.
+"""
+
 
 runner = CliRunner()
 
@@ -60,7 +71,7 @@ class TestExecucaoBemSucedida:
         resultado = runner.invoke(app, ["analyze", str(_gondola(tmp_path)), "--json"])
         assert resultado.exit_code == EXIT_OK
         payload = json.loads(resultado.stdout)
-        assert payload["schema_version"] == "1.1"
+        assert payload["schema_version"] == "1.2"
         assert payload["total_detections"] == 6
 
     def test_json_nao_se_mistura_com_a_saida_humana(self, tmp_path: Path) -> None:

@@ -23,6 +23,16 @@ from vitrine.eval.dataset import Sample, load_split
 if TYPE_CHECKING:
     from pathlib import Path
 
+pytestmark = pytest.mark.integration
+"""Estes testes criam arquivos, bancos e invocam a CLI inteira.
+
+Continuam rodando por padrao -- marcar nao e esconder. A marca existe para
+que quem esta mexendo no dominio possa rodar
+``pytest -m 'not slow and not integration'`` e ter resposta em menos de dois
+segundos.
+"""
+
+
 runner = CliRunner()
 
 

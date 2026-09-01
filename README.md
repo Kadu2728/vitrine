@@ -20,9 +20,10 @@
 > Saída real de `vitrine analyze`, sobre a imagem acima. Reproduza com
 > `uv run python examples/demo.py`.
 
-> **Status: Fase 2 de 4.** Funciona de ponta a ponta — foto entra, relatório e
-> imagem anotada saem. **O detector real ainda não tem peso treinado em
-> gôndola**, e as métricas de detecção continuam *não medidas*. Ver
+> **Status: Fase 3 de 4.** Funciona de ponta a ponta, em foto avulsa e em lote:
+> `analyze`, `batch` (paralelo e resumível), `history` (evolução por PDV) e
+> `benchmark`. **O detector real ainda não tem peso treinado em gôndola**, e as
+> métricas de detecção continuam *não medidas*. Ver
 > [Resultados](#resultados) e [O que ainda não existe](#o-que-ainda-não-existe).
 
 ---
@@ -96,6 +97,10 @@ pacote denunciaria que a biblioteca não é reutilizável de verdade.
 - Desenha a **imagem anotada** e emite **JSON com schema versionado**.
 - Mede **precisão, recall e AP@50** de qualquer detector sobre um dataset
   anotado.
+- Processa **pastas inteiras em paralelo**, com retomada após Ctrl+C, isolamento
+  de falha por imagem e log estruturado com tempo por etapa.
+- Guarda **histórico por ponto de venda** em SQLite e mostra a evolução ao
+  longo do tempo, ordenada pela data em que a foto foi tirada.
 
 **Não faz, e não vai fazer:**
 
@@ -130,9 +135,13 @@ foto.jpg
    ├─ share ............. contagem, área linear e ocupação por região │ (só matemática)
    └─ gaps .............. espaços onde caberia produto               ─┘
             │
-            ├─ ShareReport ──► JSON (schema 1.1)
-            └─ annotate ────► imagem anotada
+            ├─ ShareReport ──► JSON (schema 1.2)
+            ├─ annotate ────► imagem anotada
+            └─ storage ─────► SQLite: histórico por PDV
 ```
+
+Em lote, o mesmo caminho roda em `ProcessPoolExecutor`, com um manifesto
+append-only registrando cada imagem concluída — é ele que permite retomar.
 
 **A regra de dependência é rígida:** `domain/` não importa nada de `vision/`,
 `render/` ou `eval/`, e não conhece imagem, arquivo nem modelo. Não é uma
@@ -194,7 +203,29 @@ e uma de caixas de sabão em pó têm noções diferentes de "grande".
 por homografia produziria quadriláteros, e o domínio só entende retângulo
 alinhado ao eixo — além de o detector acertar mais em imagem retificada.
 
-**7. EXIF é corrigido sempre.** Foto de celular vem rotacionada por metadado.
+**7. O lote é resumível, e é o manifesto que decide o formato.** `manifest.jsonl`
+é append-only com `flush` a cada linha. Um JSON único precisaria ser reescrito
+inteiro a cada imagem: se a máquina morrer durante a reescrita, o progresso todo
+se perde — exatamente na hora em que ele mais importa. Append-only sobrevive à
+queda; no pior caso a última linha fica truncada, e o leitor descarta linha
+inválida e continua. A chave de retomada é caminho + tamanho + mtime, não hash
+de conteúdo: hashear 400 fotos antes de começar anularia boa parte da economia.
+
+**8. O que atravessa a fronteira do processo é a *especificação* do detector,
+não o detector.** Um modelo YOLO carregado não é serializável — e nem deveria
+ser, mandar centenas de megabytes por pipe a cada tarefa seria absurdo. Cada
+worker constrói o seu uma vez e reaproveita. Sem isso, ou o paralelismo não
+existe, ou o peso é recarregado a cada imagem.
+
+**9. Só o processo pai escreve no SQLite.** Workers devolvem relatório; o pai
+persiste. Vários processos escrevendo no mesmo banco garantiriam contenção de
+lock — `database is locked` — sem ganho nenhum.
+
+**10. O histórico se ordena pela data da foto, lida do EXIF.** Um lote
+processado com uma semana de atraso embaralharia a série temporal se a ordenação
+fosse pela data de processamento.
+
+**11. EXIF é corrigido sempre.** Foto de celular vem rotacionada por metadado.
 Orientação errada entrega a gôndola deitada, e o agrupamento por centro vertical
 produz lixo **sem levantar erro nenhum**. É a falha silenciosa mais cara do
 sistema e tem [teste próprio](tests/unit/test_vision.py).
@@ -207,7 +238,7 @@ Recorte do JSON real gerado pela imagem no topo:
 
 ```json
 {
-  "schema_version": "1.1",
+  "schema_version": "1.2",
   "status": "ok",
   "total_detections": 24,
   "shelf_count": 3,
@@ -287,6 +318,66 @@ direita:
 uv run vitrine analyze foto.jpg --out ./resultado --detector yolo --perspective 120,80 900,60 940,700 100,720 --cuts 0,0.5,1 --region-names minha_marca,concorrencia
 ```
 
+Processar uma pasta inteira, gravando o histórico do ponto de venda:
+
+```bash
+uv run vitrine batch ./fotos --store-id LOJA_12 --workers 4 --out ./resultado
+```
+
+```
+                Lote
+┌───────────────────────────┬───────┐
+│ Metrica                   │ Valor │
+├───────────────────────────┼───────┤
+│ Imagens na pasta          │     4 │
+│ Processadas agora         │     3 │
+│ Puladas (ja no manifesto) │     0 │
+│ Falhas                    │     1 │
+│ Tempo                     │ 0.8 s │
+│ Analises no historico     │     3 │
+└───────────────────────────┴───────┘
+Imagens que falharam:
+  corrompida.png: Nao consegui decodificar corrompida.png como imagem. […]
+```
+
+Uma imagem corrompida virou uma linha de erro; as outras três seguiram. Rodar o
+**mesmo comando** de novo processa zero e pula quatro — é a retomada lendo
+`resultado/manifest.jsonl`.
+
+Ver a evolução do ponto de venda:
+
+```bash
+uv run vitrine history --store-id LOJA_12 --last 30
+```
+
+```
+                                   Historico: LOJA_DEMO
+┌──────────────────┬───────────────┬──────────┬───────┬──────────┬────────┬──────────────┬──────────────┐
+│                  │               │          │       │          │        │  minha_marca │ concorrencia │
+│ Data da foto     │ Foto          │ Produtos │ Prat. │ Ocupacao │ Vazios │ cont. │ area │ cont. │ area │
+├──────────────────┼───────────────┼──────────┼───────┼──────────┼────────┼──────────────┼──────────────┤
+│ 2026-08-24 09:30 │ visita_24.png │    27 +2 │     3 │ 87% +6pp │   0 -1 │  44% │   50% │  56% │   50% │
+│ 2026-08-17 09:30 │ visita_17.png │    25 +3 │     3 │ 80% +4pp │      1 │  48% │   52% │  52% │   48% │
+│ 2026-08-10 09:30 │ visita_10.png │       22 │     3 │      76% │      1 │  45% │   50% │  55% │   50% │
+└──────────────────┴───────────────┴──────────┴───────┴──────────┴────────┴──────────────┴──────────────┘
+```
+
+> Saída real. A gôndola foi sendo reposta entre as visitas: 22 → 25 → 27
+> produtos, ocupação de 76% para 87%, e a ruptura zerou na última.
+
+O log estruturado sai em JSONL, com o tempo de cada etapa:
+
+```bash
+jq -r 'select(.level=="error") | .image' resultado/vitrine.jsonl
+```
+
+```json
+{"ts": "2026-09-01T18:15:44", "level": "error", "event": "image_failed",
+ "image": "corrompida.png", "duration_ms": 301.8,
+ "error": "Nao consegui decodificar corrompida.png como imagem. […]",
+ "stages_ms": {"detector": 0.0, "analyze": 301.7}}
+```
+
 Avaliar um detector sobre um dataset anotado no formato YOLO:
 
 ```bash
@@ -333,7 +424,8 @@ print(resultado.report.model_dump_json(indent=2))
 ## Testes
 
 ```bash
-uv run pytest                                              # suíte rápida, sem modelo
+uv run pytest                                              # tudo, sem modelo
+uv run pytest -m "not slow and not integration"            # laço interno: só domínio e visão
 uv run pytest -m slow                                      # exige o extra [yolo]
 HYPOTHESIS_PROFILE=thorough uv run pytest tests/property   # 500 exemplos por propriedade
 uv run pytest --cov=vitrine --cov-report=term-missing
@@ -374,8 +466,6 @@ Sem eufemismo, e sem `TODO` escondido no código:
 
 - **Peso treinado em gôndola.** `YoloDetector` funciona, mas o peso padrão é de
   COCO. Enquanto isso não mudar, as métricas de detecção ficam não medidas.
-- **Lote, SQLite e histórico por PDV** (`vitrine batch`, `vitrine history`).
-  Fase 3.
 - **GIF de demonstração e publicação no PyPI.** Fase 4. A imagem anotada no topo
   já vem de execução real.
 - **Página de demonstração hospedada.** Os arquivos para o Hugging Face Spaces

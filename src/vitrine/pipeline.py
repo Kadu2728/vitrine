@@ -112,6 +112,7 @@ def analyze_image(
         exif_rotated=imagem.exif_rotated,
         downscale=imagem.downscale,
         rectified=perspective is not None,
+        captured_at=imagem.captured_at,
     )
 
     report = analyze_detections(

@@ -20,6 +20,16 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 
+pytestmark = pytest.mark.integration
+"""Estes testes gravam e leem imagem em disco.
+
+Continuam rodando por padrao -- marcar nao e esconder. A marca existe para que
+quem esta mexendo no dominio possa rodar
+``pytest -m 'not slow and not integration'`` e ter resposta em menos de dois
+segundos.
+"""
+
+
 @pytest.fixture
 def gondola_sintetica(tmp_path: Path) -> Path:
     """Duas prateleiras de tres produtos, gravadas em disco."""

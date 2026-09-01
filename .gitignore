@@ -23,6 +23,10 @@ coverage.xml
 fotos/
 saidas/
 *.db
+*.db-wal
+*.db-shm
+manifest.jsonl
+vitrine.jsonl
 
 # Sistema
 .DS_Store

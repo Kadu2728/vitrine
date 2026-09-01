@@ -159,6 +159,30 @@ class TestLoadImage:
         # Largura e altura trocam de lugar.
         assert (carregada.width, carregada.height) == (60, 120)
 
+    def test_data_de_captura_vem_do_exif(self, tmp_path: Path) -> None:
+        caminho = tmp_path / "com_data.jpg"
+        imagem = Image.new("RGB", (60, 40), color=(10, 20, 30))
+        exif = imagem.getexif()
+        exif[36867] = "2026:08:31 14:35:07"
+        imagem.save(caminho, exif=exif)
+        assert load_image(caminho).captured_at == "2026-08-31T14:35:07"
+
+    def test_exif_malformado_cai_para_a_data_do_arquivo(self, tmp_path: Path) -> None:
+        """Foto que passou por aplicativo de mensagem costuma vir sem EXIF valido."""
+        caminho = tmp_path / "estranha.jpg"
+        imagem = Image.new("RGB", (60, 40), color=(10, 20, 30))
+        exif = imagem.getexif()
+        exif[36867] = "data invalida"
+        imagem.save(caminho, exif=exif)
+        carregada = load_image(caminho)
+        assert carregada.captured_at
+        assert carregada.captured_at != "data invalida"
+
+    def test_sem_exif_usa_a_data_do_arquivo(self, tmp_path: Path) -> None:
+        pixels, _ = synthetic_shelf(rows=1, columns=1)
+        caminho = write_image(tmp_path / "sem_exif.png", pixels)
+        assert load_image(caminho).captured_at.startswith("20")
+
     def test_arquivo_inexistente(self, tmp_path: Path) -> None:
         with pytest.raises(ImageLoadError, match="nao encontrada") as exc:
             load_image(tmp_path / "nao_existe.jpg")

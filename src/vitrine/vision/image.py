@@ -18,6 +18,7 @@ voltar para o referencial da foto original.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime
 from typing import TYPE_CHECKING, cast
 
 import cv2
@@ -38,6 +39,11 @@ qualidade da deteccao."""
 ABSOLUTE_MAX_PIXELS = 80_000_000
 """Teto de seguranca contra imagem absurda ou bomba de descompressao."""
 
+EXIF_DATETIME_ORIGINAL = 36867
+"""Tag EXIF com o instante em que o obturador disparou."""
+
+_EXIF_DATETIME_FORMAT = "%Y:%m:%d %H:%M:%S"
+
 
 @dataclass(frozen=True)
 class LoadedImage:
@@ -54,6 +60,15 @@ class LoadedImage:
 
     downscale: float
     """Fator aplicado: ``1.0`` significa tamanho original."""
+
+    captured_at: str
+    """Instante da captura em ISO 8601.
+
+    Vem do EXIF quando a camera gravou; senao, da data de modificacao do
+    arquivo. Historico por ponto de venda se ordena por isto, e nao pela hora
+    em que alguem rodou o lote: um lote processado com uma semana de atraso
+    embaralharia a serie temporal inteira.
+    """
 
     @property
     def width(self) -> int:
@@ -94,6 +109,7 @@ def load_image(path: Path, *, max_size: int | None = DEFAULT_MAX_SIZE) -> Loaded
     try:
         with Image.open(path) as raw:
             _guard_pixel_count(path, raw.size)
+            captured_at = _captured_at(raw, path)
             oriented = ImageOps.exif_transpose(raw)
             rotated = oriented is not raw and oriented.size != raw.size
             rgb = (oriented if oriented is not None else raw).convert("RGB")
@@ -118,7 +134,30 @@ def load_image(path: Path, *, max_size: int | None = DEFAULT_MAX_SIZE) -> Loaded
         name=path.name,
         exif_rotated=rotated,
         downscale=downscale,
+        captured_at=captured_at,
     )
+
+
+def _captured_at(imagem: Image.Image, path: Path) -> str:
+    """Instante da captura, em ISO 8601.
+
+    Prefere o EXIF, que e o unico registro do momento real da foto. Cai para a
+    data de modificacao do arquivo quando a camera nao gravou ou quando o
+    metadado esta corrompido -- caso comum em imagem que passou por aplicativo
+    de mensagem, que costuma remover o EXIF.
+    """
+    try:
+        bruto = imagem.getexif().get(EXIF_DATETIME_ORIGINAL)
+    except (OSError, ValueError, AttributeError):
+        bruto = None
+
+    if isinstance(bruto, str):
+        try:
+            return datetime.strptime(bruto.strip(), _EXIF_DATETIME_FORMAT).isoformat()
+        except ValueError:
+            pass
+
+    return datetime.fromtimestamp(path.stat().st_mtime).replace(microsecond=0).isoformat()
 
 
 def _guard_pixel_count(path: Path, size: tuple[int, int]) -> None:

@@ -76,21 +76,38 @@ zero corretamente antes de ser usado para medir alguma coisa. Reproduzivel por
 
 ---
 
-## Qualidade de codigo (2026-08-31)
+## Qualidade de codigo (2026-09-01)
 
 Numeros de execucao real, reproduziveis pelos comandos da tabela.
 
 | Metrica | Valor | Comando |
 |---|---|---|
-| Testes da suite rapida | 287 passando, 1 pulado | `uv run pytest` |
-| Tempo da suite rapida | 4,7 s / 5,0 s / 6,6 s em tres execucoes | `uv run pytest` |
+| Suite completa | 358 passando, 1 pulado, 1 desmarcado | `uv run pytest` |
+| Laco interno (sem disco nem banco) | 221 passando | `uv run pytest -m "not slow and not integration"` |
 | Cobertura de `vitrine.domain` | 100% de linhas e de ramos | `uv run pytest --cov=vitrine.domain` |
-| Cobertura do pacote inteiro | 92% de linhas; 98% excluindo `vision/yolo.py`, que so roda com o extra instalado | `uv run pytest --cov=vitrine` |
-| Invariantes de propriedade | 18 propriedades x 500 exemplos, 58 s | `HYPOTHESIS_PROFILE=thorough uv run pytest tests/property` |
+| Cobertura do pacote | 95% de linhas, excluindo `vision/yolo.py` | `uv run pytest --cov=vitrine --cov-config=.coveragerc-ci` |
+| Invariantes de propriedade | 18 propriedades x 500 exemplos | `HYPOTHESIS_PROFILE=thorough uv run pytest tests/property` |
 
-O teste pulado e o de `vitrine/yolo.py`, que exige o extra `yolo`. Por isso esse
-modulo aparece com 0% de cobertura no relatorio: ele e exercitado apenas por
-`uv run pytest -m slow`, com o extra instalado.
+### O orcamento de 5 segundos: nao cumprido, e por que
+
+A regra do projeto pede suite rapida abaixo de 5 s. **Ela nao esta sendo
+cumprida nesta maquina**: a suite completa leva de 29 s a 36 s, e o laco interno
+cerca de 14 s.
+
+O que foi feito a respeito, com medicao:
+
+- **Marcador `integration`**, separando o que toca disco, banco e a CLI inteira.
+  O laco interno roda 221 dos 358 testes. Eles continuam rodando por padrao --
+  marcar nao e esconder.
+- **Spinner do Rich desligado fora de terminal.** Sozinho, isso levou os testes
+  de CLI de lote de 12,5 s para 3,3 s. Era desperdicio real: uma thread de
+  atualizacao por execucao, escrevendo ruido em log de CI.
+- **`pytest-xdist` testado e descartado**: 5 s viraram 8,3 s com 4 workers e
+  19 s com 8. Subir processo no Windows custa mais que o ganho.
+
+O que **nao** foi feito: apagar teste para o numero caber. A suite cresceu de
+matematica pura para cobrir IO de imagem, subprocesso, SQLite e mais de 80
+invocacoes de CLI; o custo e real e esta declarado em vez de disfarcado.
 
 ### Ambiente e ressalvas de medicao
 
@@ -99,11 +116,8 @@ modulo aparece com 0% de cobertura no relatorio: ele e exercitado apenas por
   de Application Control nesta maquina).
 - Cobertura com o tracer em Python puro (`COVERAGE_CORE=pytrace`): a DLL do
   tracer em C tambem e bloqueada pela mesma politica.
-- **Os tempos desta maquina tem variancia patologica.** A mesma suite ja mediu
-  2,75 s e 413 s em execucoes consecutivas, aparentemente por interceptacao na
-  criacao de processo. Os numeros acima sao de execucoes consecutivas sem
-  outlier, mas devem ser lidos como ordem de grandeza. A medicao confiavel de
-  tempo virá da CI.
-- `pytest-xdist` foi testado e **descartado por medicao**: com 4 workers a suite
-  passou de ~5 s para 8,3 s, e com 8 workers para 19 s. O custo de subir
-  processo no Windows domina uma suite deste tamanho.
+- **Os tempos desta maquina tem variancia patologica**, aparentemente por
+  interceptacao na criacao de processo e de arquivo. A mesma suite ja mediu
+  2,75 s e 413 s em execucoes consecutivas. Cada teste de historico cria tres
+  arquivos (SQLite em modo WAL), e e ai que o custo aparece. **A medicao
+  confiavel de tempo tem de vir da CI**, nao daqui.

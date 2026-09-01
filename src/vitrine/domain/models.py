@@ -21,7 +21,7 @@ from vitrine.domain import geometry
 if TYPE_CHECKING:
     from vitrine.domain.geometry import Interval
 
-SCHEMA_VERSION: Final[Literal["1.1"]] = "1.1"
+SCHEMA_VERSION: Final[Literal["1.2"]] = "1.2"
 """Versao do schema JSON de saida. Muda quando o contrato muda.
 
 1.1 acrescentou ``image``, ``detector`` e ``ShelfReport.boxes``: sem saber de
@@ -417,6 +417,10 @@ class ImageMeta(BaseModel):
     exif_rotated: bool = Field(description="Se a orientacao EXIF precisou ser aplicada.")
     downscale: float = Field(gt=0.0, le=1.0, description="Fator de reducao aplicado.")
     rectified: bool = Field(description="Se houve correcao de perspectiva por 4 pontos.")
+    captured_at: str | None = Field(
+        default=None,
+        description="Data e hora da captura em ISO 8601, do EXIF ou do arquivo.",
+    )
 
 
 class DetectorInfo(BaseModel):
@@ -488,7 +492,7 @@ class ShareReport(BaseModel):
 
     model_config = _FROZEN
 
-    schema_version: Literal["1.1"] = SCHEMA_VERSION
+    schema_version: Literal["1.2"] = SCHEMA_VERSION
     status: Literal["ok", "no_detections"]
     source: str | None = None
     image: ImageMeta | None = None

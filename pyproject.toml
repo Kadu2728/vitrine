@@ -67,6 +67,7 @@ pythonpath = ["tests", "tests/property"]
 addopts = "-q --strict-markers --strict-config -m 'not slow'"
 markers = [
     "slow: exige modelo real ou dataset; nao roda por padrao",
+    "integration: toca disco, banco ou a CLI inteira; roda por padrao",
 ]
 filterwarnings = ["error"]
 

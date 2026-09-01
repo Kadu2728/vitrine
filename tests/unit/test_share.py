@@ -23,7 +23,7 @@ class TestPadraoSemRegioes:
     def test_estrutura_geral(self, gondola: list[Detection]) -> None:
         report = analyze_detections(gondola)
         assert report.status == "ok"
-        assert report.schema_version == "1.1"
+        assert report.schema_version == "1.2"
         assert report.total_detections == 7
         assert report.duplicates_removed == 0
         assert report.shelf_count == 2
@@ -228,7 +228,7 @@ class TestContratoDeSaida:
     def test_json_e_recarregavel(self, gondola: list[Detection]) -> None:
         report = analyze_detections(gondola, regions=ESQUERDA_DIREITA)
         payload = json.loads(report.model_dump_json())
-        assert payload["schema_version"] == "1.1"
+        assert payload["schema_version"] == "1.2"
         assert payload["shelves"][0]["regions"][0]["region"] == "esquerda"
 
 
