@@ -61,10 +61,21 @@ a API:
 vitrine analyze foto.jpg --json | jq '.regions[] | {(.region): .linear_share}'
 ```
 
-Uma camada web em cima disso adicionaria superfície de manutenção sem adicionar
-capacidade. O efeito colateral é o ponto: sem tela bonita, não há onde esconder
-problema. A qualidade do código, dos testes e do contrato de saída é o produto
-inteiro.
+Uma camada web dentro do produto adicionaria superfície de manutenção sem
+adicionar capacidade. O efeito colateral é o ponto: sem tela bonita, não há onde
+esconder problema. A qualidade do código, dos testes e do contrato de saída é o
+produto inteiro.
+
+**Existe uma página de demonstração — e ela mora fora do produto.** Em
+[`app/`](app/) há uma página Gradio que permite arrastar uma foto e ver o
+resultado sem instalar Python. Ela importa `analyze_image` e `annotate` e nada
+mais: é um consumidor da biblioteca como qualquer outro, sem atalho para dentro
+do pacote. Se a página sumir, o Vitrine continua inteiro; e o `gradio` está num
+grupo de desenvolvimento, então `pipx install vitrine-shelf` não o baixa.
+
+Essa separação não é formalidade — é a prova prática da regra "biblioteca
+primeiro". Uma interface que só conseguisse existir mexendo nas entranhas do
+pacote denunciaria que a biblioteca não é reutilizável de verdade.
 
 ---
 
@@ -277,6 +288,15 @@ Avaliar um detector sobre um dataset anotado no formato YOLO:
 uv run vitrine benchmark ./dataset --split val --detector yolo --weights modelo.pt --json
 ```
 
+Ver no navegador, arrastando a foto:
+
+```bash
+uv run --group demo python app/gradio_app.py
+```
+
+Abre em <http://127.0.0.1:7860>. Para um link público temporário (túnel do
+Gradio, 72 h, expõe a sua máquina enquanto rodar): acrescente `--share`.
+
 Como biblioteca:
 
 ```python
@@ -353,6 +373,10 @@ Sem eufemismo, e sem `TODO` escondido no código:
   Fase 3.
 - **GIF de demonstração e publicação no PyPI.** Fase 4. A imagem anotada no topo
   já vem de execução real.
+- **Página de demonstração hospedada.** Os arquivos para o Hugging Face Spaces
+  estão prontos em [`app/`](app/); o deploy depende de uma conta e de um
+  `git push` — e só faz sentido depois do peso treinado, senão o link público
+  demonstra o detector falhando.
 - **Detecção automática do retângulo da gôndola.** Fora do MVP, por decisão.
 
 Limitações do que **já** existe, que não vão embora com mais código:
@@ -363,10 +387,16 @@ Limitações do que **já** existe, que não vão embora com mais código:
 - Prateleiras de alturas muito diferentes na mesma foto usam uma mediana global,
   que é o denominador errado para ambas.
 - Produto deitado distorce a altura mediana e portanto o limiar da foto inteira.
-- **O `ContourDetector` não serve para foto de loja real.** Ele encontra
-  retângulos de alto contraste; com iluminação de supermercado, embalagem
-  brilhante e produto encostado em produto, o resultado é ruim. Existe para
-  testes exatos e demonstração, e isso está dito no `--help` também.
+- **O `ContourDetector` não serve para foto de loja real — verificado, não
+  suposto.** Rodado em duas fotos de gôndola de supermercado, ele marcou a
+  faixa de merchandising da prateleira e as etiquetas de preço como produto,
+  ignorou uma fileira inteira de copos de macarrão instantâneo e inferiu 13 e 14
+  prateleiras onde havia 3. Existe para testes exatos e demonstração; isso está
+  dito no `--help` e na própria página de demonstração.
+- **Prateleira vazia continua invisível, e isso foi confirmado em campo.** Numa
+  das fotos de teste, a prateleira completamente vazia — a ruptura real que
+  motivou a foto — não gerou alerta nenhum, porque não há produto ali de onde
+  inferir uma prateleira. É exatamente o ponto cego declarado desde a Fase 1.
 
 ---
 

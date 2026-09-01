@@ -36,6 +36,12 @@ vitrine = "vitrine.cli:app"
 Homepage = "https://github.com/vitrine/vitrine-shelf"
 
 [dependency-groups]
+# A pagina de demonstracao (app/) nao e parte do produto: o gradio fica num
+# grupo de desenvolvimento, nunca nas dependencias base. Quem instalar
+# vitrine-shelf continua recebendo so a biblioteca e a CLI.
+demo = [
+    "gradio>=5.0",
+]
 dev = [
     "pytest>=8.3",
     "pytest-cov>=5.0",
@@ -88,6 +94,13 @@ disallow_any_explicit = false
 show_error_codes = true
 
 [[tool.mypy.overrides]]
+# A pagina de demonstracao vive fora do pacote e entra no sys.path so em tempo
+# de execucao do teste; o mypy nao tem como resolver o modulo a partir daqui.
+# Ela propria e verificada quando o mypy roda sobre app/.
+module = ["gradio_app"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
 # Extra opcional e sem stubs publicados. O isolamento em vision/yolo.py e
 # justamente o que impede essa concessao de vazar para o resto do codigo.
 module = ["ultralytics.*"]
@@ -133,6 +146,8 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["D100", "D101", "D102", "D103", "D104"]
+# A pagina de demonstracao lida com o Gradio, que passa Any por toda parte.
+"app/*" = ["ANN401"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"

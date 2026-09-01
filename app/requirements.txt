@@ -1,0 +1,4 @@
+# Dependencias da pagina de demonstracao, para deploy no Hugging Face Spaces.
+# A pagina consome a biblioteca publicada; nao ha atalho para dentro do pacote.
+vitrine-shelf>=0.1.0
+gradio>=5.0

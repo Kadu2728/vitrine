@@ -27,7 +27,9 @@ jobs:
           enable-cache: true
 
       - name: Sincronizar ambiente
-        run: uv sync --python ${{ matrix.python }}
+        # O grupo demo entra para que os testes da pagina rodem em vez de
+        # serem pulados silenciosamente na CI.
+        run: uv sync --group demo --python ${{ matrix.python }}
 
       - name: ruff check
         run: uv run ruff check .
@@ -36,7 +38,7 @@ jobs:
         run: uv run ruff format --check .
 
       - name: mypy --strict
-        run: uv run mypy src/ tests/
+        run: uv run mypy src/ tests/ app/
 
       - name: Suite rapida
         # A suite rapida precisa caber no ciclo de desenvolvimento: menos de 5s.
