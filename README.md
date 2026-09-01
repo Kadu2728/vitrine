@@ -245,6 +245,11 @@ SKU-110K**. O Ultralytics distribui um `SKU-110K.yaml` (configuração de
 *dataset*, para treinar) e pesos de COCO, que não conhecem gôndola. As opções e
 o método já registrado estão em [`benchmarks/results.md`](benchmarks/results.md).
 
+O treino está preparado em
+[`notebooks/treino_sku110k.ipynb`](notebooks/treino_sku110k.ipynb), para rodar no
+Google Colab com GPU gratuita. Ele já emite o bloco de procedência — data, hash
+do peso, versões e comando exato — pronto para substituir a seção "não medido".
+
 O que **está** medido, de execução real em 2026-08-31:
 
 | Métrica | Valor |

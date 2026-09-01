@@ -22,6 +22,11 @@ foi feita:
 3. **Medir o COCO como linha de base**, deixando claro que e um piso e nao um
    resultado -- serve para dimensionar quanto o treino especifico melhora.
 
+A opcao 1 esta preparada em `notebooks/treino_sku110k.ipynb`, para rodar no
+Google Colab com GPU gratuita: o dataset baixa para o disco do Google, o treino
+usa a GPU do Google, e so o peso de ~6 MB desce para a maquina de quem rodou. A
+ultima celula imprime o bloco de procedencia pronto para substituir esta secao.
+
 Enquanto nenhuma delas acontecer, este arquivo continua dizendo "nao medido".
 Nao ha estimativa aqui, e nao havera.
 
