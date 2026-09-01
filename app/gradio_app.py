@@ -186,7 +186,11 @@ def construir() -> Any:
                     nome_direita = gr.Textbox(
                         value="concorrencia", label="Nome da regiao a direita"
                     )
-                botao = gr.Button("Analisar", variant="primary")
+                # Anotado como Any pelo mesmo motivo de construir(): a tipagem
+                # publicada do Gradio nao declara .click em gr.Button, e o formato
+                # muda entre versoes. Um "type: ignore" quebraria na versao em que
+                # o atributo existe, virando "ignore nao utilizado".
+                botao: Any = gr.Button("Analisar", variant="primary")
 
             with gr.Column(scale=2):
                 saida_imagem = gr.Image(label="Resultado", type="numpy")
