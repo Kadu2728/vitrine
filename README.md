@@ -2,6 +2,8 @@
 
 **Auditoria de execução em ponto de venda por visão computacional.**
 
+[![CI](https://github.com/Kadu2728/vitrine/actions/workflows/ci.yml/badge.svg)](https://github.com/Kadu2728/vitrine/actions/workflows/ci.yml)
+
 ![Gôndola analisada: caixas coloridas por prateleira, ruptura destacada em vermelho](examples/gondola.anotada.png)
 
 ```
