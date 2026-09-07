@@ -34,3 +34,8 @@ Thumbs.db
 
 # Log de erro da CLI
 vitrine.log
+
+# Saida do app de demonstracao rodando local
+app_out.txt
+app_err.txt
+share_out.txt
